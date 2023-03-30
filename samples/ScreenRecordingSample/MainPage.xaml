@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ScreenRecordingSample.MainPage"
+             Title="Screen Recording Plugin">
+
+    <VerticalStackLayout
+        VerticalOptions="CenterAndExpand"
+        HorizontalOptions="CenterAndExpand"
+        Padding="30,0"
+        Spacing="5">
+            <Button Text="Start Recording" Clicked="StartRecordingClicked" />
+            <Button Text="Stop Recording" Clicked="StopRecordingClicked" />
+    </VerticalStackLayout>
+</ContentPage>
