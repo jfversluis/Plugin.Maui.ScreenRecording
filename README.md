@@ -1,6 +1,6 @@
 # Plugin.Maui.ScreenRecording
 
-`Plugin.Maui.ScreenRecording` provides the ability to get or set the screen brightness inside a .NET MAUI application.
+`Plugin.Maui.ScreenRecording` provides the ability to record the screen from within your .NET MAUI app.
 
 ## Getting Started
 
@@ -8,6 +8,4 @@
 
 ## API Usage
 
-`Plugin.Maui.ScreenRecording` provides the `ScreenRecording` class that has a single property `Brightness` that you can get or set.
-
-You can either use it as a static class, e.g.: `ScreenRecording.Default.Brightness = 1` or with dependency injection: `builder.Services.AddSingleton<IScreenRecording>(ScreenRecording.Default);`
+TODO
