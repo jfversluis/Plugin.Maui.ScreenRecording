@@ -28,5 +28,7 @@
 	</array>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We&apos;d like to add the screen recordings to your Photos app!</string>
 </dict>
 </plist>
