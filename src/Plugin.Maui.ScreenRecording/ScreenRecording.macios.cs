@@ -12,23 +12,28 @@ partial class ScreenRecordingImplementation : IScreenRecording
 
 	public async Task StartRecording(bool enableMicrophone)
 	{
-		// TODO: else throw? Give option to throw?
-		if (IsSupported)
-		{
-			await RPScreenRecorder.SharedRecorder.StartRecordingAsync(enableMicrophone);
-		}
+		await RPScreenRecorder.SharedRecorder.StartRecordingAsync(enableMicrophone);
 	}
 
-	public async Task StopRecording()
+	public async Task StopRecording(ScreenRecordingOptions? options)
 	{
 		if (RPScreenRecorder.SharedRecorder.Recording)
 		{
-			var tempPath = NSUrl.FromFilename(Path.Combine(Path.GetTempPath(),
-				$"screenrecording-{DateTime.Now.ToString("dd-MM-yyyy HH:mm:ss")}.mp4"));
+			var saveOptions = options ?? new();
 
-			await RPScreenRecorder.SharedRecorder.StopRecordingAsync(tempPath);
+			var savePath = NSUrl.FromFilename(Path.Combine(Path.GetTempPath(),
+				$"screenrecording_{DateTime.Now.ToString("ddMMyyyy_HHmmss")}.mp4"));
 
-			var permissionResult = await Permissions.RequestAsync<Permissions.PhotosAddOnly>();
+			if (!string.IsNullOrWhiteSpace(saveOptions.SavePath))
+			{
+				savePath = NSUrl.FromFilename(saveOptions.SavePath);
+			}
+
+			await RPScreenRecorder.SharedRecorder
+				.StopRecordingAsync(savePath);
+
+			var permissionResult =
+				await Permissions.CheckStatusAsync<Permissions.PhotosAddOnly>();
 
 			if (permissionResult != PermissionStatus.Granted)
 			{
@@ -36,13 +41,16 @@ partial class ScreenRecordingImplementation : IScreenRecording
 				return;
 			}
 
-			PHPhotoLibrary.SharedPhotoLibrary.PerformChanges(() =>
+			if (saveOptions.SaveToGallery)
 			{
-				PHAssetChangeRequest.FromVideo(tempPath);
-			}, (success, error) =>
-			{
-				// TODO what to do here?
-			});
+				PHPhotoLibrary.SharedPhotoLibrary.PerformChanges(() =>
+				{
+					PHAssetChangeRequest.FromVideo(savePath);
+				}, (success, error) =>
+				{
+					// TODO what to do here?
+				});
+			}
 
 			// TODO show preview view controller?
 			// Show preview after recording, only on iOS/macOS

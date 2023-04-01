@@ -20,11 +20,16 @@ public interface IScreenRecording
 	/// </summary>
 	/// <param name="enableMicrophone">Determines if the microphone should be used as input during the recording.</param>
 	/// <returns>A <see cref="Task"/> object with information about this operation.</returns>
+	/// <remarks>
+	/// A permission to access the microphone might be needed, this is not requested by this method.
+	/// Make sure to add an entry in the metadata of your app and request the runtime permission
+	/// before calling this method.
+	/// </remarks>
 	Task StartRecording(bool enableMicrophone);
 
 	/// <summary>
 	/// Stops the recording and saves the video file to the device's gallery.
 	/// </summary>
 	/// <returns>A <see cref="Task"/> object with information about this operation.</returns>
-	Task StopRecording();
+	Task StopRecording(ScreenRecordingOptions? options = null);
 }

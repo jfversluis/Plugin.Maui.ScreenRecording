@@ -9,6 +9,11 @@
         HorizontalOptions="CenterAndExpand"
         Padding="30,0"
         Spacing="5">
+            <HorizontalStackLayout Spacing="5">
+                <Switch x:Name="recordMicrophone" VerticalOptions="Center" />
+                <Label Text="Record Microphone" VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
             <Button Text="Start Recording" Clicked="StartRecordingClicked" />
             <Button Text="Stop Recording" Clicked="StopRecordingClicked" />
     </VerticalStackLayout>

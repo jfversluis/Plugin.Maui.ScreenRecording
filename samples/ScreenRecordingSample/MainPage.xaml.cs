@@ -20,7 +20,7 @@ public partial class MainPage : ContentPage
 			return;
 		}
 
-		await screenRecording.StartRecording(false);
+		await screenRecording.StartRecording(recordMicrophone.IsToggled);
 	}
 
 	async void StopRecordingClicked(object sender, EventArgs e)
