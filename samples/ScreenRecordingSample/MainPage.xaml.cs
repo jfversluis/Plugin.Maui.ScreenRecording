@@ -25,6 +25,6 @@ public partial class MainPage : ContentPage
 
 	async void StopRecordingClicked(object sender, EventArgs e)
 	{
-		await screenRecording.StopRecording();
+		var result = await screenRecording.StopRecording();
 	}
 }

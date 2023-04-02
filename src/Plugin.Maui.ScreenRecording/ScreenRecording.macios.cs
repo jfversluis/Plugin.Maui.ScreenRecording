@@ -15,7 +15,7 @@ partial class ScreenRecordingImplementation : IScreenRecording
 		await RPScreenRecorder.SharedRecorder.StartRecordingAsync(enableMicrophone);
 	}
 
-	public async Task StopRecording(ScreenRecordingOptions? options)
+	public async Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options)
 	{
 		if (RPScreenRecorder.SharedRecorder.Recording)
 		{
@@ -32,17 +32,17 @@ partial class ScreenRecordingImplementation : IScreenRecording
 			await RPScreenRecorder.SharedRecorder
 				.StopRecordingAsync(savePath);
 
-			var permissionResult =
-				await Permissions.CheckStatusAsync<Permissions.PhotosAddOnly>();
-
-			if (permissionResult != PermissionStatus.Granted)
-			{
-				// TODO what do we do here?
-				return;
-			}
-
 			if (saveOptions.SaveToGallery)
 			{
+				var permissionResult =
+					await Permissions.CheckStatusAsync<Permissions.PhotosAddOnly>();
+
+				if (permissionResult != PermissionStatus.Granted)
+				{
+					// TODO what do we do here?
+					return null;
+				}
+
 				PHPhotoLibrary.SharedPhotoLibrary.PerformChanges(() =>
 				{
 					PHAssetChangeRequest.FromVideo(savePath);
@@ -52,11 +52,14 @@ partial class ScreenRecordingImplementation : IScreenRecording
 				});
 			}
 
+			return new ScreenRecordingFile(savePath.Path ?? string.Empty);
 			// TODO show preview view controller?
 			// Show preview after recording, only on iOS/macOS
 			//var cv = await RPScreenRecorder.SharedRecorder.StopRecordingAsync();
 
 			//Platform.GetCurrentUIViewController().ShowViewController(cv, cv);
 		}
+
+		return null;
 	}
 }

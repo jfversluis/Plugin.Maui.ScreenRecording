@@ -11,7 +11,7 @@ partial class ScreenRecordingImplementation : IScreenRecording
 		throw new PlatformNotSupportedException();
 	}
 
-	public Task StopRecording(ScreenRecordingOptions? options)
+	public Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options)
 	{
 		throw new PlatformNotSupportedException();
 	}

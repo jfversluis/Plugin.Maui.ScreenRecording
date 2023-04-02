@@ -31,5 +31,5 @@ public interface IScreenRecording
 	/// Stops the recording and saves the video file to the device's gallery.
 	/// </summary>
 	/// <returns>A <see cref="Task"/> object with information about this operation.</returns>
-	Task StopRecording(ScreenRecordingOptions? options = null);
+	Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options = null);
 }

@@ -12,7 +12,7 @@ partial class ScreenRecordingImplementation : IScreenRecording
 		throw new NotImplementedException();
 	}
 
-	public Task StopRecording(ScreenRecordingOptions? options)
+	public Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options)
 	{
 		throw new NotImplementedException();
 	}
