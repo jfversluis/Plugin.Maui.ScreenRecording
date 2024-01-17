@@ -11,6 +11,7 @@ public static class MauiProgram
 		builder
 			.UseMauiApp<App>()
 			.UseMauiCommunityToolkitMediaElement()
+			.UseScreenRecording()
 			.ConfigureFonts(fonts =>
 			{
 				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -18,7 +19,6 @@ public static class MauiProgram
 			});
 
 		builder.Services.AddTransient<MainPage>();
-		builder.Services.AddSingleton<IScreenRecording>(ScreenRecording.Default);
 
 		return builder.Build();
 	}

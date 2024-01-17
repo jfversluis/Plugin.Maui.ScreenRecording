@@ -1,6 +1,4 @@
-﻿using Autofac;
-using CommunityToolkit.Maui.Views;
-using Plugin.Maui.ScreenRecording;
+﻿using Plugin.Maui.ScreenRecording;
 
 namespace ScreenRecordingSample;
 
@@ -8,10 +6,10 @@ public partial class MainPage : ContentPage
 {
 	readonly IScreenRecording screenRecording;
 
-	public MainPage()
+	public MainPage(IScreenRecording screenRecording)
 	{
 		InitializeComponent();
-		this.screenRecording = App.Container.Resolve<IScreenRecording>();
+		this.screenRecording = screenRecording;
 
 		btnStart.IsEnabled = true;
 		btnStop.IsEnabled = false;

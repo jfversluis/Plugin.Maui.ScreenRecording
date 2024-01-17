@@ -50,11 +50,11 @@
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 	<ItemGroup>
-	  <PackageReference Include="Autofac" Version="7.1.0" />
 	  <PackageReference Include="CommunityToolkit.Maui.MediaElement" Version="3.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\src\Plugin.Maui.ScreenRecording\Plugin.Maui.ScreenRecording.csproj" />
+	  <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 	</ItemGroup>
 </Project>

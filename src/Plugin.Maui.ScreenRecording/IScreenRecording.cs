@@ -16,14 +16,6 @@ public interface IScreenRecording
 	bool IsSupported { get; }
 
 	/// <summary>
-	/// Sets up the screenrecording for android.
-	/// </summary>
-	/// <remarks>
-	/// This is needed for android to request media projection.
-	/// </remarks>
-	void Setup();
-
-	/// <summary>
 	/// Starts the screenrecording.
 	/// </summary>
 	/// <param name="enableMicrophone">Determines if the microphone should be used as input during the recording.</param>

@@ -3,12 +3,10 @@ using Android.Media;
 using Android.Media.Projection;
 using Android.Hardware.Display;
 using Android.Views;
-using Microsoft.Maui.ApplicationModel;
 using Android.Content.PM;
 using Android.OS;
-using Microsoft.Maui.Devices;
-
-
+using Android.App;
+using Application = Android.App.Application;
 
 namespace Plugin.Maui.ScreenRecording;
 
@@ -30,40 +28,14 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
 	public bool IsSupported { get; private set; } = true;
 
+	bool enableMicrophone;
+
 	public async Task StartRecording(bool enableMicrophone)
 	{
 		if (IsSupported)
 		{
-			if (MediaRecorder != null)
-			{
-				MediaRecorder.Reset();
-			}
-			else
-			{
-				if (Build.VERSION.SdkInt > BuildVersionCodes.R)
-				{
-					MediaRecorder = new MediaRecorder(Android.App.Application.Context);
-				}
-				else
-				{
-					MediaRecorder = new MediaRecorder();
-				}
-			}
-
-			FilePath = Path.Combine(Application.Context.FilesDir.AbsolutePath, "Screen.mp4");
-
-
-			try
-			{
-				SetUpMediaRecorder(enableMicrophone);
-				MediaRecorder.Start();
-				IsRecording = true;
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine(ex.Message);
-				throw new NotSupportedException("Screen recording did not start.");
-			}
+			this.enableMicrophone = enableMicrophone;
+			Setup();
 		}
 		else
 		{
@@ -128,6 +100,37 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 		// Additional setup or start recording
 		await Task.Delay(1000);
 		MediaProjection = ProjectionManager.GetMediaProjection(resultCode, data);
+
+		if (MediaRecorder != null)
+		{
+			MediaRecorder.Reset();
+		}
+		else
+		{
+			if (Build.VERSION.SdkInt > BuildVersionCodes.R)
+			{
+				MediaRecorder = new MediaRecorder(Android.App.Application.Context);
+			}
+			else
+			{
+				MediaRecorder = new MediaRecorder();
+			}
+		}
+
+		FilePath = Path.Combine(Application.Context.FilesDir.AbsolutePath, "Screen.mp4");
+
+
+		try
+		{
+			SetUpMediaRecorder(enableMicrophone);
+			MediaRecorder.Start();
+			IsRecording = true;
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine(ex.Message);
+			throw new NotSupportedException("Screen recording did not start.");
+		}
 	}
 
 	public void SetUpMediaRecorder(bool enableMicrophone)
@@ -187,7 +190,6 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 		Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
 		Platform.CurrentActivity.StartActivityForResult(captureIntent, REQUEST_MEDIA_PROJECTION);
 	}
-
 }
 
 public class MyVirtualDisplayCallback : VirtualDisplay.Callback
