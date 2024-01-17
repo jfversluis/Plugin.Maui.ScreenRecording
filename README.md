@@ -12,29 +12,29 @@ TODO-->
 
 ## Maui Installation Instructions:
 
-1. Install the AutoFac Nuget plugin (version 7.1.0 known working) https://www.nuget.org/packages/autofac/
 
-2. In Main App.xaml.cs add the reference to AutoFac and the screen recording plugin:
+In `MauiProgram.cs` add the reference to the screen recording plugin:
 ```
-    using Autofac;
     using Plugin.Maui.ScreenRecording;
 ```
 
-3. Add variables inside your partial app class:
-```
-    public static Autofac.IContainer Container;
-    static readonly Autofac.ContainerBuilder builder = new Autofac.ContainerBuilder();
-```
+Then add a call to `.UseScreenRecording()` on your `MauiAppBuilder`. For example:
 
-4. In Main App.xaml.cs add the following inside App Constructor:
 ```
-    builder.RegisterType<ScreenRecordingImplementation>().As<IScreenRecording>().SingleInstance();
-    Container = (Autofac.IContainer)builder.Build();
+var builder = MauiApp.CreateBuilder();
+builder
+    .UseMauiApp<App>()
+    .UseScreenRecording() // This line was added
+    .ConfigureFonts(fonts =>
+    {
+        fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+        fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+    });
 ```
 
 ## Android Instructions:
 
-1. In AndroidManifest.xml inside the manifest node add:
+In `AndroidManifest.xml` inside the manifest node add:
 ```
 <application android:allowBackup="true" android:supportsRtl="true" android:requestLegacyExternalStorage="true" android:preserveLegacyExternalStorage="true">
 	<service android:name="Plugin.Maui.ScreenRecording.ScreenRecordingImplementation.ScreenRecordingService" android:exported="false" android:foregroundServiceType="mediaProjection" />
@@ -45,51 +45,13 @@ TODO-->
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 ```
 
-3. Reference AutoFac in MainActivity.cs
-
-```using Autofac;```
-
-
-4. In MainActivity.cs add the following just inside your public class:
-
-```ScreenRecordingImplementation screenRecordingImplementation;```
-
-5. In MainActivity.cs add the OnCreate method:
-	
-```
-    protected override void OnCreate(Bundle savedInstanceState)
-    	{
-    		base.OnCreate(savedInstanceState);
-    
-    		// Initialize other components...
-    
-    		// Initialize ScreenRecordingImplementation
-    		screenRecordingImplementation = (ScreenRecordingImplementation)App.Container.Resolve<IScreenRecording>();
-    		screenRecordingImplementation.Setup();
-    	}
-```
-
-
-6. In MainActivity.cs add the OnActivityResult method:
-```
-    protected override async void OnActivityResult(int requestCode, Result resultCode, Android.Content.Intent? data)
-    {
-    	base.OnActivityResult(requestCode, resultCode, data);
-    
-    	screenRecordingImplementation.OnScreenCapturePermissionGranted((int)resultCode, data);
-    }
-```
-
-
-
 ## IOS / Mac Instructions:
 
-No Setup Needed.
+No additional setup is needed.
 
 ## Windows Instructions
 
-Not Implemented yet.
-
+Not supported (yet).
 
 # Usage:
 
@@ -97,11 +59,14 @@ On the page you want the screen recorder, create a read only variable and set it
 ```
     readonly IScreenRecording screenRecording;
     
-    this.screenRecording = App.Container.Resolve<IScreenRecording>();
+    this.screenRecording = ScreenRecording.Default;
 ```
+
+<!-- TODO add instructions for constructor injection -->
 
 To Check if device is capable:
 
+    ```screenRecording.IsSupported;```
 
 To Start Recording:
 
