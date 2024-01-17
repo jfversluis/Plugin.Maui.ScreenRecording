@@ -10,11 +10,6 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
 	public bool IsSupported => RPScreenRecorder.SharedRecorder.Available;
 
-	public void Setup()
-	{
-		// Not Needed for iOS
-	}
-
 	public async Task StartRecording(bool enableMicrophone)
 	{
 		await RPScreenRecorder.SharedRecorder.StartRecordingAsync(enableMicrophone);
