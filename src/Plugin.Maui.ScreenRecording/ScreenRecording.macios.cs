@@ -4,11 +4,16 @@ using ReplayKit;
 
 namespace Plugin.Maui.ScreenRecording;
 
-partial class ScreenRecordingImplementation : IScreenRecording
+public partial class ScreenRecordingImplementation : IScreenRecording
 {
 	public bool IsRecording => RPScreenRecorder.SharedRecorder.Recording;
 
 	public bool IsSupported => RPScreenRecorder.SharedRecorder.Available;
+
+	public void Setup()
+	{
+		// Not Needed for iOS
+	}
 
 	public async Task StartRecording(bool enableMicrophone)
 	{

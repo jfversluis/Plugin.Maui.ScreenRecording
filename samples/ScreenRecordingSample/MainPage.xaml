@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="ScreenRecordingSample.MainPage"
              Title="Screen Recording Plugin">
 
@@ -9,12 +10,16 @@
         HorizontalOptions="CenterAndExpand"
         Padding="30,0"
         Spacing="5">
+
+		<StackLayout>
+			<toolkit:MediaElement x:Name="mediaElement" WidthRequest="400" HeightRequest="300"></toolkit:MediaElement>
+		</StackLayout>
             <HorizontalStackLayout Spacing="5">
                 <Switch x:Name="recordMicrophone" VerticalOptions="Center" />
                 <Label Text="Record Microphone" VerticalOptions="Center" />
             </HorizontalStackLayout>
 
-            <Button Text="Start Recording" Clicked="StartRecordingClicked" />
-            <Button Text="Stop Recording" Clicked="StopRecordingClicked" />
+            <Button Text="Start Recording" Clicked="StartRecordingClicked" x:Name="btnStart" />
+            <Button Text="Stop Recording" Clicked="StopRecordingClicked" x:Name="btnStop" />
     </VerticalStackLayout>
 </ContentPage>

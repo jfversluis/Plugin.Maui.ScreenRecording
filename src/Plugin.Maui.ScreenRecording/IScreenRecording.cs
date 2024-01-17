@@ -16,6 +16,14 @@ public interface IScreenRecording
 	bool IsSupported { get; }
 
 	/// <summary>
+	/// Sets up the screenrecording for android.
+	/// </summary>
+	/// <remarks>
+	/// This is needed for android to request media projection.
+	/// </remarks>
+	void Setup();
+
+	/// <summary>
 	/// Starts the screenrecording.
 	/// </summary>
 	/// <param name="enableMicrophone">Determines if the microphone should be used as input during the recording.</param>
@@ -32,4 +40,6 @@ public interface IScreenRecording
 	/// </summary>
 	/// <returns>A <see cref="Task"/> object with information about this operation.</returns>
 	Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options = null);
+
+
 }
