@@ -10,7 +10,7 @@ using Application = Android.App.Application;
 
 namespace Plugin.Maui.ScreenRecording;
 
-public partial class ScreenRecordingImplementation : IScreenRecording
+public partial class ScreenRecordingImplementation : MediaProjection.Callback, IScreenRecording
 {
 	public MediaProjectionManager ProjectionManager { get; set; }
 	public MediaProjection MediaProjection { get; set; }
@@ -100,6 +100,7 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 		// Additional setup or start recording
 		await Task.Delay(1000);
 		MediaProjection = ProjectionManager.GetMediaProjection(resultCode, data);
+		MediaProjection.RegisterCallback(this, null);
 
 		if (MediaRecorder != null)
 		{
@@ -135,7 +136,6 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
 	public void SetUpMediaRecorder(bool enableMicrophone)
 	{
-
 		MediaRecorder.SetVideoSource(VideoSource.Surface);
 		if (enableMicrophone)
 		{
@@ -189,6 +189,13 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
 		Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
 		Platform.CurrentActivity.StartActivityForResult(captureIntent, REQUEST_MEDIA_PROJECTION);
+	}
+
+	public override void OnStop()
+	{
+		base.OnStop();
+
+		// TODO cleanup mediaprojection things
 	}
 }
 
