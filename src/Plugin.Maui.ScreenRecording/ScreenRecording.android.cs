@@ -12,17 +12,14 @@ namespace Plugin.Maui.ScreenRecording;
 
 public partial class ScreenRecordingImplementation : MediaProjection.Callback, IScreenRecording
 {
-	public MediaProjectionManager ProjectionManager { get; set; }
-	public MediaProjection MediaProjection { get; set; }
-	public VirtualDisplay VirtualDisplay { get; set; }
-	public MediaRecorder MediaRecorder { get; set; }
-	public string FilePath;
+	public MediaProjectionManager? ProjectionManager { get; set; }
+	public MediaProjection? MediaProjection { get; set; }
+	public VirtualDisplay? VirtualDisplay { get; set; }
+	public MediaRecorder? MediaRecorder { get; set; }
+	public string? FilePath;
 	public const int REQUEST_MEDIA_PROJECTION = 1;
 
-	public static EventHandler<ScreenRecordingEventArgs> ScreenRecordingPermissionHandler;
-	public ScreenRecordingImplementation()
-	{
-	}
+	public static EventHandler<ScreenRecordingEventArgs>? ScreenRecordingPermissionHandler;
 
 	public bool IsRecording { get; private set; }
 
@@ -30,7 +27,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	bool enableMicrophone;
 
-	public async Task StartRecording(bool enableMicrophone)
+	public Task StartRecording(bool enableMicrophone)
 	{
 		if (IsSupported)
 		{
@@ -41,54 +38,53 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		{
 			throw new NotSupportedException("Screen recording not supported on this device.");
 		}
+
+		return Task.CompletedTask;
 	}
 
-	public async Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options)
+	public Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options)
 	{
 		if (IsRecording)
 		{
 			IsRecording = false;
 			try
 			{
-				MediaRecorder.Stop();
-				MediaRecorder.Release();
-				VirtualDisplay.Release();
+				MediaRecorder?.Stop();
+				MediaRecorder?.Release();
+				VirtualDisplay?.Release();
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("STACK TRACE:");
 				Console.WriteLine(ex.StackTrace);
 
-
 				Console.WriteLine("Exception Message:");
 				Console.WriteLine(ex.Message);
-
 
 				if (ex.InnerException != null)
 				{
 					Console.WriteLine("INNER Exception Message:");
 					Console.WriteLine(ex.InnerException.Message);
 				}
-
 			}
 			finally
 			{
-
-				MediaProjection.Stop();
+				MediaProjection?.Stop();
 			}
-			var context = Android.App.Application.Context;
+
+			var context = Application.Context;
 
 			context.StopService(new Intent(context, typeof(ScreenRecordingService)));
 
-			return new ScreenRecordingFile(FilePath);
+			return Task.FromResult<ScreenRecordingFile?>(new ScreenRecordingFile(FilePath));
 		}
 
-		return null;
+		return Task.FromResult<ScreenRecordingFile?>(null);
 	}
 
 	public async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
 	{
-		Intent intent = new Intent(Android.App.Application.Context, typeof(ScreenRecordingService));
+		Intent intent = new(Application.Context, typeof(ScreenRecordingService));
 		if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
 		{
 			Application.Context.StartForegroundService(intent);
@@ -99,8 +95,9 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		}
 		// Additional setup or start recording
 		await Task.Delay(1000);
-		MediaProjection = ProjectionManager.GetMediaProjection(resultCode, data);
-		MediaProjection.RegisterCallback(this, null);
+
+		MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data);
+		MediaProjection?.RegisterCallback(this, null);
 
 		if (MediaRecorder != null)
 		{
@@ -110,16 +107,16 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		{
 			if (Build.VERSION.SdkInt > BuildVersionCodes.R)
 			{
-				MediaRecorder = new MediaRecorder(Android.App.Application.Context);
+				MediaRecorder = new(Application.Context);
 			}
 			else
 			{
-				MediaRecorder = new MediaRecorder();
+				MediaRecorder = new();
 			}
 		}
 
+		// TODO make this more unique?
 		FilePath = Path.Combine(Application.Context.FilesDir.AbsolutePath, "Screen.mp4");
-
 
 		try
 		{
@@ -136,41 +133,45 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	public void SetUpMediaRecorder(bool enableMicrophone)
 	{
-		MediaRecorder.SetVideoSource(VideoSource.Surface);
+		MediaRecorder?.SetVideoSource(VideoSource.Surface);
+
 		if (enableMicrophone)
 		{
-			MediaRecorder.SetAudioSource(AudioSource.Mic);
+			MediaRecorder?.SetAudioSource(AudioSource.Mic);
 		}
-		MediaRecorder.SetOutputFormat(OutputFormat.Mpeg4);
-		MediaRecorder.SetVideoEncoder(VideoEncoder.H264);
+
+		MediaRecorder?.SetOutputFormat(OutputFormat.Mpeg4);
+		MediaRecorder?.SetVideoEncoder(VideoEncoder.H264);
+
 		if (enableMicrophone)
 		{
-			MediaRecorder.SetAudioEncoder(AudioEncoder.AmrNb);
+			MediaRecorder?.SetAudioEncoder(AudioEncoder.AmrNb);
 		}
+
 		int width = (int)DeviceDisplay.Current.MainDisplayInfo.Width;
 		int height = (int)DeviceDisplay.Current.MainDisplayInfo.Height;
 		int density = (int)DeviceDisplay.Current.MainDisplayInfo.Density;
-		MediaRecorder.SetVideoSize(width, height);
-		MediaRecorder.SetVideoFrameRate(30);
-		MediaRecorder.SetOutputFile(FilePath);
+		MediaRecorder?.SetVideoSize(width, height);
+		MediaRecorder?.SetVideoFrameRate(30);
+		MediaRecorder?.SetOutputFile(FilePath);
 
 		try
 		{
-			MediaRecorder.Prepare();
+			MediaRecorder?.Prepare();
 
-			MyVirtualDisplayCallback mVirtualDisplayCallback = new MyVirtualDisplayCallback();
+			MyVirtualDisplayCallback mVirtualDisplayCallback = new();
 
-			//  Seems to never return from here???
-			HandlerThread handlerThread = new HandlerThread("VirtualDisplayThread");
+			// TODO Seems to never return from here???
+			HandlerThread handlerThread = new("VirtualDisplayThread");
 			handlerThread.Start();
-			Handler handler = new Handler(handlerThread.Looper);
-			VirtualDisplay = MediaProjection.CreateVirtualDisplay("ScreenCapture", width, height, density, DisplayFlags.Presentation, MediaRecorder.Surface, mVirtualDisplayCallback, handler);
+			Handler handler = new(handlerThread.Looper);
+			VirtualDisplay = MediaProjection?.CreateVirtualDisplay("ScreenCapture", width, height, density, DisplayFlags.Presentation, MediaRecorder.Surface, mVirtualDisplayCallback, handler);
 		}
 		catch (Java.IO.IOException ex)
 		{
 			Console.WriteLine($"MediaRecorder preparation failed: {ex.Message}");
 			// Handle preparation failure
-			MediaRecorder.Release();
+			MediaRecorder?.Release();
 		}
 	}
 
@@ -187,8 +188,8 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 			IsSupported = false;
 		}
 
-		Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
-		Platform.CurrentActivity.StartActivityForResult(captureIntent, REQUEST_MEDIA_PROJECTION);
+		Intent captureIntent = ProjectionManager?.CreateScreenCaptureIntent();
+		Platform.CurrentActivity?.StartActivityForResult(captureIntent, REQUEST_MEDIA_PROJECTION);
 	}
 
 	public override void OnStop()
@@ -196,6 +197,8 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		base.OnStop();
 
 		// TODO cleanup mediaprojection things
+		VirtualDisplay?.Release();
+		MediaRecorder?.Release();
 	}
 }
 
@@ -262,5 +265,4 @@ public class ScreenRecordingService : Service
 
 		return StartCommandResult.Sticky;
 	}
-
 }
