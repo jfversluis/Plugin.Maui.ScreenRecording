@@ -8,7 +8,6 @@
 
 ## API Usage
 
-
 In `MauiProgram.cs` add the reference to the screen recording plugin:
 ```
     using Plugin.Maui.ScreenRecording;
@@ -87,3 +86,8 @@ To Stop Recording:
 
     ```ScreenRecordingFile screenResult = await screenRecording.StopRecording();```
 
+## Acknowledgements
+
+This project could not have came to be without these projects and people, thank you! <3
+
+A big thank you to [@rdurish](https://github.com/rdurish) who provided the initial implementation for Android. Amazing work!
