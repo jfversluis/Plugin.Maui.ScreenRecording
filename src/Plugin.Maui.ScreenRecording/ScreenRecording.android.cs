@@ -3,50 +3,61 @@ using Android.Media;
 using Android.Media.Projection;
 using Android.Hardware.Display;
 using Android.Views;
-using Android.Content.PM;
-using Android.OS;
-using Android.App;
 using Application = Android.App.Application;
 
 namespace Plugin.Maui.ScreenRecording;
 
 public partial class ScreenRecordingImplementation : MediaProjection.Callback, IScreenRecording
 {
-	public MediaProjectionManager? ProjectionManager { get; set; }
-	public MediaProjection? MediaProjection { get; set; }
-	public VirtualDisplay? VirtualDisplay { get; set; }
-	public MediaRecorder? MediaRecorder { get; set; }
-	public string? FilePath;
-	public const int REQUEST_MEDIA_PROJECTION = 1;
+	const int requestMediaProjectionCode = 1;
+	string? filePath;
+	bool enableMicrophone;
 
-	public static EventHandler<ScreenRecordingEventArgs>? ScreenRecordingPermissionHandler;
+	MediaProjectionManager? ProjectionManager { get; set; }
+	MediaProjection? MediaProjection { get; set; }
+	VirtualDisplay? VirtualDisplay { get; set; }
+	MediaRecorder? MediaRecorder { get; set; }
 
 	public bool IsRecording { get; private set; }
 
-	public bool IsSupported { get; private set; } = true;
+	public bool IsSupported => ProjectionManager is not null;
 
-	bool enableMicrophone;
+	public ScreenRecordingImplementation()
+	{
+		ProjectionManager = (MediaProjectionManager?)Platform.AppContext.GetSystemService(Context.MediaProjectionService);
+	}
 
-	public Task StartRecording(bool enableMicrophone)
+	public void StartRecording(ScreenRecordingOptions? options = null)
 	{
 		if (IsSupported)
 		{
-			this.enableMicrophone = enableMicrophone;
+			enableMicrophone = options?.EnableMicrophone ?? false;
+
+			var saveOptions = options ?? new();
+			var savePath = saveOptions.SavePath;
+
+			if (string.IsNullOrWhiteSpace(savePath))
+			{
+				savePath = Path.Combine(Path.GetTempPath(),
+					$"screenrecording_{DateTime.Now:ddMMyyyy_HHmmss}.mp4");
+			}
+
+			filePath = savePath;
+
 			Setup();
 		}
 		else
 		{
 			throw new NotSupportedException("Screen recording not supported on this device.");
 		}
-
-		return Task.CompletedTask;
 	}
 
-	public Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options)
+	public Task<ScreenRecordingFile?> StopRecording()
 	{
 		if (IsRecording)
 		{
 			IsRecording = false;
+
 			try
 			{
 				MediaRecorder?.Stop();
@@ -76,16 +87,18 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 			context.StopService(new Intent(context, typeof(ScreenRecordingService)));
 
-			return Task.FromResult<ScreenRecordingFile?>(new ScreenRecordingFile(FilePath));
+			return Task.FromResult<ScreenRecordingFile?>(new ScreenRecordingFile(filePath ?? string.Empty));
 		}
 
 		return Task.FromResult<ScreenRecordingFile?>(null);
 	}
 
-	public async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
+	internal async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
 	{
 		Intent intent = new(Application.Context, typeof(ScreenRecordingService));
-		if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+
+		// Android O
+		if (OperatingSystem.IsAndroidVersionAtLeast(26))
 		{
 			Application.Context.StartForegroundService(intent);
 		}
@@ -93,19 +106,21 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		{
 			Application.Context.StartService(intent);
 		}
-		// Additional setup or start recording
-		await Task.Delay(1000);
 
-		MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data);
+		// Wait for the foreground service to be started
+		await Task.Delay(1000); // TODO can we do this better?
+
+		MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data!);
 		MediaProjection?.RegisterCallback(this, null);
 
-		if (MediaRecorder != null)
+		if (MediaRecorder is not null)
 		{
 			MediaRecorder.Reset();
 		}
 		else
 		{
-			if (Build.VERSION.SdkInt > BuildVersionCodes.R)
+			// Android S
+			if (OperatingSystem.IsAndroidVersionAtLeast(31))
 			{
 				MediaRecorder = new(Application.Context);
 			}
@@ -114,9 +129,6 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 				MediaRecorder = new();
 			}
 		}
-
-		// TODO make this more unique?
-		FilePath = Path.Combine(Application.Context.FilesDir.AbsolutePath, "Screen.mp4");
 
 		try
 		{
@@ -133,39 +145,43 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	public void SetUpMediaRecorder(bool enableMicrophone)
 	{
-		MediaRecorder?.SetVideoSource(VideoSource.Surface);
-
-		if (enableMicrophone)
+		if (MediaRecorder is null)
 		{
-			MediaRecorder?.SetAudioSource(AudioSource.Mic);
+			throw new Exception("MediaRecorder has not been created.");
 		}
 
-		MediaRecorder?.SetOutputFormat(OutputFormat.Mpeg4);
-		MediaRecorder?.SetVideoEncoder(VideoEncoder.H264);
+		MediaRecorder.SetVideoSource(VideoSource.Surface);
 
 		if (enableMicrophone)
 		{
-			MediaRecorder?.SetAudioEncoder(AudioEncoder.AmrNb);
+			MediaRecorder.SetAudioSource(AudioSource.Mic);
+		}
+
+		MediaRecorder.SetOutputFormat(OutputFormat.Mpeg4);
+		MediaRecorder.SetVideoEncoder(VideoEncoder.H264);
+
+		if (enableMicrophone)
+		{
+			MediaRecorder.SetAudioEncoder(AudioEncoder.AmrNb);
 		}
 
 		int width = (int)DeviceDisplay.Current.MainDisplayInfo.Width;
 		int height = (int)DeviceDisplay.Current.MainDisplayInfo.Height;
 		int density = (int)DeviceDisplay.Current.MainDisplayInfo.Density;
-		MediaRecorder?.SetVideoSize(width, height);
-		MediaRecorder?.SetVideoFrameRate(30);
-		MediaRecorder?.SetOutputFile(FilePath);
+
+		MediaRecorder.SetVideoSize(width, height);
+		MediaRecorder.SetVideoFrameRate(30);
+		MediaRecorder.SetOutputFile(filePath);
 
 		try
 		{
-			MediaRecorder?.Prepare();
+			MediaRecorder.Prepare();
 
 			MyVirtualDisplayCallback mVirtualDisplayCallback = new();
 
-			// TODO Seems to never return from here???
-			HandlerThread handlerThread = new("VirtualDisplayThread");
-			handlerThread.Start();
-			Handler handler = new(handlerThread.Looper);
-			VirtualDisplay = MediaProjection?.CreateVirtualDisplay("ScreenCapture", width, height, density, DisplayFlags.Presentation, MediaRecorder.Surface, mVirtualDisplayCallback, handler);
+			VirtualDisplay = MediaProjection?.CreateVirtualDisplay("ScreenCapture",
+				width, height, density, DisplayFlags.Presentation,
+				MediaRecorder.Surface, mVirtualDisplayCallback, null);
 		}
 		catch (Java.IO.IOException ex)
 		{
@@ -177,32 +193,23 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	public void Setup()
 	{
-		ProjectionManager = (MediaProjectionManager)Platform.AppContext.GetSystemService(Context.MediaProjectionService);
-
-		if (ProjectionManager != null)
+		if (ProjectionManager is not null)
 		{
-			IsSupported = true;
+			Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
+			Platform.CurrentActivity?.StartActivityForResult(captureIntent, requestMediaProjectionCode);
 		}
-		else
-		{
-			IsSupported = false;
-		}
-
-		Intent captureIntent = ProjectionManager?.CreateScreenCaptureIntent();
-		Platform.CurrentActivity?.StartActivityForResult(captureIntent, REQUEST_MEDIA_PROJECTION);
 	}
 
 	public override void OnStop()
 	{
 		base.OnStop();
 
-		// TODO cleanup mediaprojection things
 		VirtualDisplay?.Release();
 		MediaRecorder?.Release();
 	}
 }
 
-public class MyVirtualDisplayCallback : VirtualDisplay.Callback
+class MyVirtualDisplayCallback : VirtualDisplay.Callback
 {
 	public override void OnPaused()
 	{
@@ -217,52 +224,5 @@ public class MyVirtualDisplayCallback : VirtualDisplay.Callback
 	public override void OnStopped()
 	{
 		base.OnStopped();
-	}
-}
-
-public class ScreenRecordingEventArgs : EventArgs
-{
-	public Result ResultCode { get; set; }
-
-	public Intent? Data { get; set; }
-}
-
-[Service(ForegroundServiceType = ForegroundService.TypeMediaProjection)]
-public class ScreenRecordingService : Service
-{
-	public override IBinder? OnBind(Intent? intent)
-	{
-		return null;
-	}
-
-	public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
-	{
-		string CHANNEL_ID = "ScreenRecordingService";
-		int NOTIFICATION_ID = 1337;
-
-		if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-		{
-			var channelName = "Screen Recording Service";
-			var channel = new NotificationChannel(CHANNEL_ID, channelName, NotificationImportance.Default)
-			{
-				Description = "Notification Channel for Screen Recording Service"
-			};
-
-			var notificationManager = (NotificationManager)GetSystemService(NotificationService);
-			notificationManager.CreateNotificationChannel(channel);
-		}
-
-		// Create a notification for the foreground service
-		var notificationBuilder = new Notification.Builder(this, CHANNEL_ID)
-			.SetContentTitle("Screen Recording")
-			.SetContentText("Recording screen...")
-			.SetSmallIcon(Resource.Drawable.notification_template_icon_low_bg); // Ensure you have 'ic_notification' in Resources/drawable
-
-		var notification = notificationBuilder.Build();
-
-		// Start the service in the foreground
-		StartForeground(NOTIFICATION_ID, notification, ForegroundService.TypeMediaProjection);
-
-		return StartCommandResult.Sticky;
 	}
 }

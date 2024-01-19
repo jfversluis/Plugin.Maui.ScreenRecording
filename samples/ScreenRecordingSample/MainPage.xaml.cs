@@ -25,7 +25,7 @@ public partial class MainPage : ContentPage
 
 		btnStart.IsEnabled = false;
 		btnStop.IsEnabled = true;
-		await screenRecording.StartRecording(recordMicrophone.IsToggled);
+		screenRecording.StartRecording(new() { EnableMicrophone = recordMicrophone.IsToggled });
 	}
 
 	async void StopRecordingClicked(object sender, EventArgs e)
@@ -34,16 +34,14 @@ public partial class MainPage : ContentPage
 
 		if (screenResult != null)
 		{
-			FileInfo f = new FileInfo(screenResult.FullPath);
+			FileInfo f = new(screenResult.FullPath);
 			await Shell.Current.DisplayAlert("File Created", $"Path: {screenResult.FullPath} Size: {f.Length.ToString("N0")} bytes", "OK");
 
 			mediaElement.Source = screenResult.FullPath;
-			Console.WriteLine($"Path: {screenResult.FullPath} Size: {f.Length.ToString("N0")} bytes");
 		}
 		else
 		{
-			await Shell.Current.DisplayAlert("No Screen Recoring", "NADA", "OK");
-			Console.WriteLine("No Screen Recoring");
+			await Shell.Current.DisplayAlert("No Screen Recording", "NADA", "OK");
 		}
 
 		btnStart.IsEnabled = true;
