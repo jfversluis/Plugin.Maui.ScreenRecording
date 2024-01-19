@@ -2,15 +2,11 @@
 
 `Plugin.Maui.ScreenRecording` provides the ability to record the screen from within your .NET MAUI app.
 
-This is a work in progress, feel free to help out!
-
-<!--## Getting Started
+## Getting Started
 
 * Available on NuGet: <http://www.nuget.org/packages/Plugin.Maui.ScreenRecording> [![NuGet](https://img.shields.io/nuget/v/Plugin.Maui.ScreenRecording.svg?label=NuGet)](https://www.nuget.org/packages/Plugin.Maui.ScreenRecording/)
 
-TODO-->
-
-## Maui Installation Instructions:
+## API Usage
 
 
 In `MauiProgram.cs` add the reference to the screen recording plugin:
@@ -32,22 +28,37 @@ builder
     });
 ```
 
-## Android Instructions:
+### Android
 
-In `AndroidManifest.xml` inside the manifest node add:
-```
-<application android:allowBackup="true" android:supportsRtl="true" android:requestLegacyExternalStorage="true" android:preserveLegacyExternalStorage="true">
+For Android you will need to setup a few things in your `AndroidManifest.xml` file. See an example below.\
+You should already have a `AndroidManifest.xml` file in your project, make sure to compare it with the example below and add the missing things.
+
+```xml
+<application>
 	<service android:name="Plugin.Maui.ScreenRecording.ScreenRecordingImplementation.ScreenRecordingService" android:exported="false" android:foregroundServiceType="mediaProjection" />
 </application>
+
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 <uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+<!-- This one is only needed when targeting API 34 and up -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
 ```
 
-## IOS / Mac Instructions:
+### iOS / macOS
 
-No additional setup is needed.
+If you want to save recordings to the Photos app, you will need to declare the `NSPhotoLibraryAddUsageDescription` permission in your `info.plist` file.
+
+For example:
+
+```xml
+<key>NSPhotoLibraryAddUsageDescription</key>
+<string>We'd like to add the screen recordings to your Photos app!</string>
+```
+
+The permission will automatically be requested by the library when needed.
 
 ## Windows Instructions
 
