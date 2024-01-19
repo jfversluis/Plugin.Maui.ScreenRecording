@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Plugin.Maui.ScreenRecording;
+﻿namespace Plugin.Maui.ScreenRecording;
 
 public class ScreenRecordingOptions
 {
@@ -15,5 +13,12 @@ public class ScreenRecordingOptions
 	/// Gets or sets whether to make this recording available
 	/// in the device's gallery app(s). Default value is <see langword="false"/>.
 	/// </summary>
+	/// <remarks>Currently only implemented for iOS.</remarks>
 	public bool SaveToGallery { get; set; }
+
+	/// <summary>
+	/// Gets or sets whether to also record microphone input.
+	/// Default value is <see langword="false"/>.
+	/// </summary>
+	public bool EnableMicrophone { get; set; }
 }

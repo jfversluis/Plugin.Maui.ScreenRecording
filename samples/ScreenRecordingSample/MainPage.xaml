@@ -1,20 +1,32 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="ScreenRecordingSample.MainPage"
              Title="Screen Recording Plugin">
+    <ScrollView>
+        <VerticalStackLayout
+            VerticalOptions="CenterAndExpand"
+            HorizontalOptions="CenterAndExpand"
+            Padding="30,0"
+            Spacing="5">
 
-    <VerticalStackLayout
-        VerticalOptions="CenterAndExpand"
-        HorizontalOptions="CenterAndExpand"
-        Padding="30,0"
-        Spacing="5">
-            <HorizontalStackLayout Spacing="5">
-                <Switch x:Name="recordMicrophone" VerticalOptions="Center" />
-                <Label Text="Record Microphone" VerticalOptions="Center" />
-            </HorizontalStackLayout>
+            
+            <toolkit:MediaElement x:Name="mediaElement" WidthRequest="400" HeightRequest="300"></toolkit:MediaElement>
 
-            <Button Text="Start Recording" Clicked="StartRecordingClicked" />
-            <Button Text="Stop Recording" Clicked="StopRecordingClicked" />
-    </VerticalStackLayout>
+            <VerticalStackLayout Spacing="5">	
+                <HorizontalStackLayout Spacing="5">
+                    <Switch x:Name="recordMicrophone" VerticalOptions="Center" />
+                    <Label Text="Record Microphone" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <HorizontalStackLayout Spacing="5">
+                    <Switch x:Name="saveToGallery" VerticalOptions="Center" />
+                    <Label Text="Save to gallery (iOS/macOS only)" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+                <Button Text="Start Recording" Clicked="StartRecordingClicked" x:Name="btnStart" />
+                <Button Text="Stop Recording" Clicked="StopRecordingClicked" x:Name="btnStop" />
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

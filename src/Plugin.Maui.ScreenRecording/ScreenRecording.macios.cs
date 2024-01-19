@@ -1,41 +1,54 @@
-﻿using Microsoft.Maui.ApplicationModel;
+﻿using Foundation;
 using Photos;
 using ReplayKit;
 
 namespace Plugin.Maui.ScreenRecording;
 
-partial class ScreenRecordingImplementation : IScreenRecording
+public partial class ScreenRecordingImplementation : IScreenRecording
 {
+	readonly ScreenRecordingOptions screenRecordingOptions = new();
+
 	public bool IsRecording => RPScreenRecorder.SharedRecorder.Recording;
 
 	public bool IsSupported => RPScreenRecorder.SharedRecorder.Available;
 
-	public async Task StartRecording(bool enableMicrophone)
+	public void StartRecording(ScreenRecordingOptions? options)
 	{
-		await RPScreenRecorder.SharedRecorder.StartRecordingAsync(enableMicrophone);
+		if (options is not null)
+		{
+			screenRecordingOptions.SavePath = Path.Combine(Path.GetTempPath(),
+				$"screenrecording_{DateTime.Now:ddMMyyyy_HHmmss}.mp4");
+
+			if (!string.IsNullOrWhiteSpace(options.SavePath))
+			{
+				screenRecordingOptions.SavePath = options.SavePath;
+			}
+
+			screenRecordingOptions.EnableMicrophone = options.EnableMicrophone;
+			screenRecordingOptions.SaveToGallery = options.SaveToGallery;
+		}
+
+		RPScreenRecorder.SharedRecorder.MicrophoneEnabled =
+			screenRecordingOptions.EnableMicrophone;
+
+		RPScreenRecorder.SharedRecorder.StartRecording(error =>
+		{
+			// TODO do something with error?
+		});
 	}
 
-	public async Task<ScreenRecordingFile?> StopRecording(ScreenRecordingOptions? options)
+	public async Task<ScreenRecordingFile?> StopRecording()
 	{
 		if (RPScreenRecorder.SharedRecorder.Recording)
 		{
-			var saveOptions = options ?? new();
+			var savePath = NSUrl.FromFilename(screenRecordingOptions.SavePath);
 
-			var savePath = NSUrl.FromFilename(Path.Combine(Path.GetTempPath(),
-				$"screenrecording_{DateTime.Now.ToString("ddMMyyyy_HHmmss")}.mp4"));
+			await RPScreenRecorder.SharedRecorder.StopRecordingAsync(savePath);
 
-			if (!string.IsNullOrWhiteSpace(saveOptions.SavePath))
-			{
-				savePath = NSUrl.FromFilename(saveOptions.SavePath);
-			}
-
-			await RPScreenRecorder.SharedRecorder
-				.StopRecordingAsync(savePath);
-
-			if (saveOptions.SaveToGallery)
+			if (screenRecordingOptions.SaveToGallery)
 			{
 				var permissionResult =
-					await Permissions.CheckStatusAsync<Permissions.PhotosAddOnly>();
+					await Permissions.RequestAsync<Permissions.PhotosAddOnly>();
 
 				if (permissionResult != PermissionStatus.Granted)
 				{
