@@ -25,7 +25,11 @@ public partial class MainPage : ContentPage
 
 		btnStart.IsEnabled = false;
 		btnStop.IsEnabled = true;
-		screenRecording.StartRecording(new() { EnableMicrophone = recordMicrophone.IsToggled });
+		screenRecording.StartRecording(new() 
+		{ 
+			EnableMicrophone = recordMicrophone.IsToggled,
+			SaveToGallery = saveToGallery.IsToggled,
+		});
 	}
 
 	async void StopRecordingClicked(object sender, EventArgs e)

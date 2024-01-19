@@ -6,12 +6,7 @@ namespace Plugin.Maui.ScreenRecording;
 
 public partial class ScreenRecordingImplementation : IScreenRecording
 {
-	readonly ScreenRecordingOptions screenRecordingOptions = new()
-	{
-		SavePath = Path.Combine(Path.GetTempPath(),
-			$"screenrecording_{DateTime.Now:ddMMyyyy_HHmmss}.mp4"),
-		SaveToGallery = false,
-	};
+	readonly ScreenRecordingOptions screenRecordingOptions = new();
 
 	public bool IsRecording => RPScreenRecorder.SharedRecorder.Recording;
 
@@ -21,6 +16,9 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 	{
 		if (options is not null)
 		{
+			screenRecordingOptions.SavePath = Path.Combine(Path.GetTempPath(),
+				$"screenrecording_{DateTime.Now:ddMMyyyy_HHmmss}.mp4");
+
 			if (!string.IsNullOrWhiteSpace(options.SavePath))
 			{
 				screenRecordingOptions.SavePath = options.SavePath;
@@ -50,7 +48,7 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 			if (screenRecordingOptions.SaveToGallery)
 			{
 				var permissionResult =
-					await Permissions.CheckStatusAsync<Permissions.PhotosAddOnly>();
+					await Permissions.RequestAsync<Permissions.PhotosAddOnly>();
 
 				if (permissionResult != PermissionStatus.Granted)
 				{
