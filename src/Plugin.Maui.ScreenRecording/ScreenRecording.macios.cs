@@ -45,7 +45,7 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 		{
 			var savePath = NSUrl.FromFilename(screenRecordingOptions.SavePath);
 
-			RPScreenRecorder.SharedRecorder.StopRecording(savePath, null);
+			await RPScreenRecorder.SharedRecorder.StopRecordingAsync(savePath);
 
 			if (screenRecordingOptions.SaveToGallery)
 			{
