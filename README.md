@@ -1,10 +1,16 @@
+![](nuget.png)
+
 # Plugin.Maui.ScreenRecording
 
 `Plugin.Maui.ScreenRecording` provides the ability to record the screen from within your .NET MAUI app.
 
-## Getting Started
+## Install Plugin
 
-* Available on NuGet: <http://www.nuget.org/packages/Plugin.Maui.ScreenRecording> [![NuGet](https://img.shields.io/nuget/v/Plugin.Maui.ScreenRecording.svg?label=NuGet)](https://www.nuget.org/packages/Plugin.Maui.ScreenRecording/)
+[![NuGet](https://img.shields.io/nuget/v/Plugin.Maui.ScreenRecording.svg?label=NuGet)](https://www.nuget.org/packages/Plugin.Maui.ScreenRecording/)
+
+Available on [NuGet](http://www.nuget.org/packages/Plugin.Maui.ScreenRecording).
+
+Install with the dotnet CLI: `dotnet add package Plugin.Maui.ScreenRecording`, or through the NuGet Package Manager in Visual Studio.
 
 ## API Usage
 
@@ -65,8 +71,9 @@ Not supported (yet).
 
 # Usage:
 
-On the page you want the screen recorder, create a read only variable and set it.
-```
+On the page you want the screen recorder, create a variable and retrieve the static instance of the `ScreenRecording` object.
+
+```csharp
     readonly IScreenRecording screenRecording;
     
     this.screenRecording = ScreenRecording.Default;
@@ -74,17 +81,30 @@ On the page you want the screen recorder, create a read only variable and set it
 
 <!-- TODO add instructions for constructor injection -->
 
-To Check if device is capable:
+To check if device is capable of making screen recordings:
 
-    ```screenRecording.IsSupported;```
+`screenRecording.IsSupported;`
 
-To Start Recording:
+To start recording:
 
-    ```await screenRecording.StartRecording(recordMicrophone True/False);```
+`screenRecording.StartRecording();`
 
-To Stop Recording:
+Additionally you can provide `ScreenRecordingOptions` to influence the behavior:
 
-    ```ScreenRecordingFile screenResult = await screenRecording.StopRecording();```
+```csharp
+ScreenRecordingOptions options = new()
+{
+	EnableMicrophone = true,
+	SaveToGallery = true,
+	SavePath = Path.Combine(Path.GetTempPath(), "myRecording.mp4"),
+};
+
+screenRecording.StartRecording(options);
+```
+
+To stop recording:
+
+`ScreenRecordingFile screenResult = await screenRecording.StopRecording();`
 
 ## Acknowledgements
 
