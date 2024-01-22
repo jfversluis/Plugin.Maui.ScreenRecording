@@ -35,7 +35,6 @@ class ScreenRecordingService : Service
 			string contentTitle = intent.GetStringExtra("ContentTitle");
 			string contentText = intent.GetStringExtra("ContentText");
 
-			// TODO we probably want to find a way for people to set these values themselves for localization for instance
 			// Create a notification for the foreground service
 			var notificationBuilder = new Notification.Builder(this, CHANNEL_ID)
 				.SetContentTitle(contentTitle)

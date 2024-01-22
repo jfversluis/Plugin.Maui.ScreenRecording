@@ -31,8 +31,8 @@ public partial class MainPage : ContentPage
 			{
 				EnableMicrophone = recordMicrophone.IsToggled,
 				SaveToGallery = saveToGallery.IsToggled,
-				SetNotificationContentTitle = ContentTitle.Text,
-				SetNotificationContentText = ContentText.Text
+				NotificationContentTitle = ContentTitle.Text,
+				NotificationContentText = ContentText.Text
 			});
 		}
 		else

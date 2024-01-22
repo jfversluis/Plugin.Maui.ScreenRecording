@@ -26,13 +26,13 @@ public class ScreenRecordingOptions
 	/// Gets or sets the notification content title.
 	/// Default value is "Screen Recording".
 	/// </summary>
-	/// <remarks>Currently only implemented for Android.</remarks>
-	public string SetNotificationContentTitle { get; set; }
+	/// <remarks>This property only has effect on Android. On other platforms no notification is shown when a screen recording is being made.</remarks>
+	public string NotificationContentTitle { get; set; }
 
 	/// <summary>
 	/// Gets or sets the notification content text.
 	/// Default value is "Recording screen...".
 	/// </summary>
-	/// <remarks>Currently only implemented for Android.</remarks>
-	public string SetNotificationContentText { get; set; }
+	/// <remarks>This property only has effect on Android. On other platforms no notification is shown when a screen recording is being made.</remarks>
+	public string NotificationContentText { get; set; }
 }

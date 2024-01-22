@@ -30,8 +30,8 @@
 			</VerticalStackLayout>
 
 			<VerticalStackLayout>
-				<Entry x:Name="ContentTitle" Text="Screen Recording" Placeholder="Enter the nofitication content title" IsVisible="false"/>
-				<Entry x:Name="ContentText" Text="Recording screen..." Placeholder="Enter the nofitication content text" IsVisible="false"/>
+				<Entry x:Name="ContentTitle" Text="Screen Recording" Placeholder="Enter the notification content title" IsVisible="false"/>
+				<Entry x:Name="ContentText" Text="Recording screen..." Placeholder="Enter the notification content text" IsVisible="false"/>
 			</VerticalStackLayout>
 
 				<Button Text="Start Recording" Clicked="StartRecordingClicked" x:Name="btnStart" />
