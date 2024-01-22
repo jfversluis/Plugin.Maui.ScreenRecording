@@ -13,6 +13,9 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 	string? filePath;
 	bool enableMicrophone;
 
+	string SetNotificationContentTitle { get; set; }
+	string SetSetNotificationContentText { get; set; }
+
 	MediaProjectionManager? ProjectionManager { get; set; }
 	MediaProjection? MediaProjection { get; set; }
 	VirtualDisplay? VirtualDisplay { get; set; }
@@ -32,6 +35,9 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		if (IsSupported)
 		{
 			enableMicrophone = options?.EnableMicrophone ?? false;
+
+			SetNotificationContentTitle = options?.SetNotificationContentTitle ?? "Screen Recording";
+			SetSetNotificationContentText = options?.SetNotificationContentText ?? "Recording screen...";
 
 			var saveOptions = options ?? new();
 			var savePath = saveOptions.SavePath;
@@ -96,6 +102,8 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 	internal async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
 	{
 		Intent intent = new(Application.Context, typeof(ScreenRecordingService));
+		intent.PutExtra("ContentTitle", SetNotificationContentTitle);
+		intent.PutExtra("ContentText", SetSetNotificationContentText);
 
 		// Android O
 		if (OperatingSystem.IsAndroidVersionAtLeast(26))

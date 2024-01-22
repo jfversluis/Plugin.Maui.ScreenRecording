@@ -21,4 +21,18 @@ public class ScreenRecordingOptions
 	/// Default value is <see langword="false"/>.
 	/// </summary>
 	public bool EnableMicrophone { get; set; }
+
+	/// <summary>
+	/// Gets or sets the notification content title.
+	/// Default value is "Screen Recording".
+	/// </summary>
+	/// <remarks>Currently only implemented for Android.</remarks>
+	public string SetNotificationContentTitle { get; set; }
+
+	/// <summary>
+	/// Gets or sets the notification content text.
+	/// Default value is "Recording screen...".
+	/// </summary>
+	/// <remarks>Currently only implemented for Android.</remarks>
+	public string SetNotificationContentText { get; set; }
 }

@@ -25,11 +25,24 @@ public partial class MainPage : ContentPage
 
 		btnStart.IsEnabled = false;
 		btnStop.IsEnabled = true;
-		screenRecording.StartRecording(new() 
-		{ 
-			EnableMicrophone = recordMicrophone.IsToggled,
-			SaveToGallery = saveToGallery.IsToggled,
-		});
+		if (setCustomNotification.IsToggled)
+		{
+			screenRecording.StartRecording(new()
+			{
+				EnableMicrophone = recordMicrophone.IsToggled,
+				SaveToGallery = saveToGallery.IsToggled,
+				SetNotificationContentTitle = ContentTitle.Text,
+				SetNotificationContentText = ContentText.Text
+			});
+		}
+		else
+		{
+			screenRecording.StartRecording(new()
+			{
+				EnableMicrophone = recordMicrophone.IsToggled,
+				SaveToGallery = saveToGallery.IsToggled
+			});
+		}
 	}
 
 	async void StopRecordingClicked(object sender, EventArgs e)
@@ -50,5 +63,11 @@ public partial class MainPage : ContentPage
 
 		btnStart.IsEnabled = true;
 		btnStop.IsEnabled = false;
+	}
+
+	void OnToggled(object sender, ToggledEventArgs e)
+	{
+		ContentTitle.IsVisible = e.Value;
+		ContentText.IsVisible = e.Value;
 	}
 }

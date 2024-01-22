@@ -32,11 +32,14 @@ class ScreenRecordingService : Service
 
 			notificationManager.CreateNotificationChannel(channel);
 
+			string contentTitle = intent.GetStringExtra("ContentTitle");
+			string contentText = intent.GetStringExtra("ContentText");
+
 			// TODO we probably want to find a way for people to set these values themselves for localization for instance
 			// Create a notification for the foreground service
 			var notificationBuilder = new Notification.Builder(this, CHANNEL_ID)
-				.SetContentTitle("Screen Recording")
-				.SetContentText("Recording screen...")
+				.SetContentTitle(contentTitle)
+				.SetContentText(contentText)
 				.SetSmallIcon(Resource.Drawable.notification_template_icon_low_bg); // Ensure you have 'ic_notification' in Resources/drawable
 
 			foregroundNotification = notificationBuilder.Build();
