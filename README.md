@@ -4,6 +4,8 @@
 
 `Plugin.Maui.ScreenRecording` provides the ability to record the screen from within your .NET MAUI app.
 
+I have also recorded a video on how to get started with this plugin. [Watch it here!](https://www.youtube.com/watch?v=M9lDKEYzwn0&list=PLfbOp004UaYVgzmTBNVI0ql2qF0LhSEU1&index=35)
+
 ## Install Plugin
 
 [![NuGet](https://img.shields.io/nuget/v/Plugin.Maui.ScreenRecording.svg?label=NuGet)](https://www.nuget.org/packages/Plugin.Maui.ScreenRecording/)
