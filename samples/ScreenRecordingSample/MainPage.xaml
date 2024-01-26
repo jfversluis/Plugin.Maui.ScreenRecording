@@ -23,9 +23,18 @@
                     <Switch x:Name="saveToGallery" VerticalOptions="Center" />
                     <Label Text="Save to gallery (iOS/macOS only)" VerticalOptions="Center" />
                 </HorizontalStackLayout>
-            </VerticalStackLayout>
+				<HorizontalStackLayout Spacing="5">
+					<Switch x:Name="setCustomNotification" VerticalOptions="Center" Toggled="OnToggled"/>
+					<Label Text="Set custom text for notification (Android only)" VerticalOptions="Center" />
+				</HorizontalStackLayout>
+			</VerticalStackLayout>
 
-                <Button Text="Start Recording" Clicked="StartRecordingClicked" x:Name="btnStart" />
+			<VerticalStackLayout>
+				<Entry x:Name="ContentTitle" Text="Screen Recording" Placeholder="Enter the notification content title" IsVisible="false"/>
+				<Entry x:Name="ContentText" Text="Recording screen..." Placeholder="Enter the notification content text" IsVisible="false"/>
+			</VerticalStackLayout>
+
+				<Button Text="Start Recording" Clicked="StartRecordingClicked" x:Name="btnStart" />
                 <Button Text="Stop Recording" Clicked="StopRecordingClicked" x:Name="btnStop" />
         </VerticalStackLayout>
     </ScrollView>
