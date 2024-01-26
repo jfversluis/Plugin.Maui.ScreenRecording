@@ -32,8 +32,11 @@ class ScreenRecordingService : Service
 
 			notificationManager.CreateNotificationChannel(channel);
 
-			string contentTitle = intent.GetStringExtra("ContentTitle");
-			string contentText = intent.GetStringExtra("ContentText");
+			string contentTitle = intent?.GetStringExtra("ContentTitle") ??
+				ScreenRecordingOptions.defaultAndroidNotificationTitle;
+
+			string contentText = intent?.GetStringExtra("ContentText") ??
+				ScreenRecordingOptions.defaultAndroidNotificationText;
 
 			// Create a notification for the foreground service
 			var notificationBuilder = new Notification.Builder(this, CHANNEL_ID)

@@ -13,8 +13,11 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 	string? filePath;
 	bool enableMicrophone;
 
-	string NotificationContentTitle { get; set; }
-	string NotificationContentText { get; set; }
+	string NotificationContentTitle { get; set; } =
+		ScreenRecordingOptions.defaultAndroidNotificationTitle;
+
+	string NotificationContentText { get; set; } =
+		ScreenRecordingOptions.defaultAndroidNotificationText;
 
 	MediaProjectionManager? ProjectionManager { get; set; }
 	MediaProjection? MediaProjection { get; set; }
@@ -32,30 +35,35 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	public void StartRecording(ScreenRecordingOptions? options = null)
 	{
-		if (IsSupported)
-		{
-			enableMicrophone = options?.EnableMicrophone ?? false;
-
-			NotificationContentTitle = options?.NotificationContentTitle ?? "Screen Recording";
-			NotificationContentText = options?.NotificationContentText ?? "Recording screen...";
-
-			var saveOptions = options ?? new();
-			var savePath = saveOptions.SavePath;
-
-			if (string.IsNullOrWhiteSpace(savePath))
-			{
-				savePath = Path.Combine(Path.GetTempPath(),
-					$"screenrecording_{DateTime.Now:ddMMyyyy_HHmmss}.mp4");
-			}
-
-			filePath = savePath;
-
-			Setup();
-		}
-		else
+		if (!IsSupported)
 		{
 			throw new NotSupportedException("Screen recording not supported on this device.");
 		}
+		
+		enableMicrophone = options?.EnableMicrophone ?? false;
+
+		if (!string.IsNullOrWhiteSpace(options?.NotificationContentTitle))
+		{
+			NotificationContentTitle = options.NotificationContentTitle;
+		}
+
+		if (!string.IsNullOrWhiteSpace(options?.NotificationContentText))
+		{
+			NotificationContentText = options.NotificationContentText;
+		}
+
+		var saveOptions = options ?? new();
+		var savePath = saveOptions.SavePath;
+
+		if (string.IsNullOrWhiteSpace(savePath))
+		{
+			savePath = Path.Combine(Path.GetTempPath(),
+				$"screenrecording_{DateTime.Now:ddMMyyyy_HHmmss}.mp4");
+		}
+
+		filePath = savePath;
+
+		Setup();
 	}
 
 	public Task<ScreenRecordingFile?> StopRecording()

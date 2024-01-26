@@ -2,6 +2,9 @@
 
 public class ScreenRecordingOptions
 {
+	internal const string defaultAndroidNotificationTitle = "Screen recording in progress...";
+	internal const string defaultAndroidNotificationText = "A screen recording is currently in progress, be careful with any sensitive information.";
+	
 	/// <summary>
 	/// Gets or sets the path to save the recording to.
 	/// The default is the device's temporary folder with a timestamped file,
@@ -24,15 +27,15 @@ public class ScreenRecordingOptions
 
 	/// <summary>
 	/// Gets or sets the notification content title.
-	/// Default value is "Screen Recording".
+	/// Default value is "Screen recording in progress...".
 	/// </summary>
 	/// <remarks>This property only has effect on Android. On other platforms no notification is shown when a screen recording is being made.</remarks>
-	public string NotificationContentTitle { get; set; }
+	public string NotificationContentTitle { get; set; } = defaultAndroidNotificationTitle;
 
 	/// <summary>
 	/// Gets or sets the notification content text.
-	/// Default value is "Recording screen...".
+	/// Default value is "A screen recording is currently in progress, be careful with any sensitive information.".
 	/// </summary>
 	/// <remarks>This property only has effect on Android. On other platforms no notification is shown when a screen recording is being made.</remarks>
-	public string NotificationContentText { get; set; }
+	public string NotificationContentText { get; set; } = defaultAndroidNotificationText;
 }
