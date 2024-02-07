@@ -28,6 +28,8 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	public bool IsSupported => ProjectionManager is not null;
 
+	public bool IsSavingToGallery { get; private set; }
+
 	public ScreenRecordingImplementation()
 	{
 		ProjectionManager = (MediaProjectionManager?)Platform.AppContext.GetSystemService(Context.MediaProjectionService);
@@ -61,7 +63,18 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 				$"screenrecording_{DateTime.Now:ddMMyyyy_HHmmss}.mp4");
 		}
 
-		filePath = savePath;
+		if (saveOptions.SaveToGallery)
+		{
+			IsSavingToGallery = saveOptions.SaveToGallery;
+			Java.IO.File picturesDirectory = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryPictures);
+			string fileName = Path.GetFileName(savePath);
+			Java.IO.File destinationFile = new Java.IO.File(picturesDirectory, fileName);
+			filePath = destinationFile.AbsolutePath;
+		}
+		else
+		{
+			filePath = savePath;
+		}
 
 		Setup();
 	}
@@ -188,6 +201,17 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		MediaRecorder.SetVideoSize(width, height);
 		MediaRecorder.SetVideoFrameRate(30);
 		MediaRecorder.SetOutputFile(filePath);
+
+		if (IsSavingToGallery)
+		{
+			//This provides a way for applications to pass a newly created or downloaded media file to the media scanner service.
+			//The media scanner service will read metadata from the file and add the file to the media content provider.
+			//Source:https://developer.android.com/reference/android/media/MediaScannerConnection
+			MediaScannerConnection.ScanFile(Application.Context,
+									new string[] { filePath },
+									new string[] { "video/mp4" },
+									null);
+		}
 
 		try
 		{
