@@ -21,7 +21,7 @@
                 </HorizontalStackLayout>
                 <HorizontalStackLayout Spacing="5">
                     <Switch x:Name="saveToGallery" VerticalOptions="Center" />
-                    <Label Text="Save to gallery (iOS/macOS only)" VerticalOptions="Center" />
+                    <Label Text="Save to gallery" VerticalOptions="Center" />
                 </HorizontalStackLayout>
 				<HorizontalStackLayout Spacing="5">
 					<Switch x:Name="setCustomNotification" VerticalOptions="Center" Toggled="OnToggled"/>
