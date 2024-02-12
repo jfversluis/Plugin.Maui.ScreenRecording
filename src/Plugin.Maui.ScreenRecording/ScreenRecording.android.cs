@@ -28,7 +28,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	public bool IsSupported => ProjectionManager is not null;
 
-	public bool IsSavingToGallery { get; private set; }
+	bool IsSavingToGallery { get; private set; }
 
 	public ScreenRecordingImplementation()
 	{
