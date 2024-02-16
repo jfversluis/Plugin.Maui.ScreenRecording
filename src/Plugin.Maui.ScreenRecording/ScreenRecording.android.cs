@@ -89,6 +89,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 			{
 				MediaRecorder?.Stop();
 				MediaRecorder?.Release();
+				MediaRecorder = null;
 				VirtualDisplay?.Release();
 			}
 			catch (Exception ex)
