@@ -9,10 +9,23 @@ public partial class MainPage : ContentPage
 	public MainPage(IScreenRecording screenRecording)
 	{
 		InitializeComponent();
+
+#if IOS
+		CheckIOSSimulator();
+#endif
+
 		this.screenRecording = screenRecording;
 
 		btnStart.IsEnabled = true;
 		btnStop.IsEnabled = false;
+	}
+
+	void CheckIOSSimulator()
+	{
+		if(DeviceInfo.DeviceType == DeviceType.Virtual)
+		{
+			DisplayAlert("iOS Simulator", "Screen recording is not supported on the iOS Device Simulator", "OK");
+		}
 	}
 
 	async void StartRecordingClicked(object sender, EventArgs e)
