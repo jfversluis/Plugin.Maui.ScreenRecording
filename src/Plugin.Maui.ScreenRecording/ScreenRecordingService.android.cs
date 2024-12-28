@@ -45,6 +45,7 @@ class ScreenRecordingService : Service
     {
         try
         {
+            // TODO ugly fix
             var instance = (ScreenRecordingImplementation)ScreenRecording.Default;
             instance.BeginRecording();
             Log.Debug(ChannelId, "Recording started.");
