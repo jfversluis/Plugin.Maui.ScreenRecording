@@ -1,7 +1,8 @@
 ﻿using Android.Content;
+using Android.Hardware.Display;
 using Android.Media;
 using Android.Media.Projection;
-using Android.Hardware.Display;
+using Android.OS;
 using Android.Views;
 using Application = Android.App.Application;
 
@@ -9,11 +10,12 @@ namespace Plugin.Maui.ScreenRecording;
 
 public partial class ScreenRecordingImplementation : MediaProjection.Callback, IScreenRecording
 {
-	const int requestMediaProjectionCode = 1;
-	string? filePath;
-	bool enableMicrophone;
+	private const int RequestMediaProjectionCode = 1;
+	private string? filePath;
+	private bool enableMicrophone;
+    private TaskCompletionSource<bool>? serviceStartAwaiter;
 
-	string NotificationContentTitle { get; set; } =
+    string NotificationContentTitle { get; set; } =
 		ScreenRecordingOptions.defaultAndroidNotificationTitle;
 
 	string NotificationContentText { get; set; } =
@@ -28,7 +30,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	public bool IsSupported => ProjectionManager is not null;
 
-	bool IsSavingToGallery;
+	bool isSavingToGallery;
 
 	public ScreenRecordingImplementation()
 	{
@@ -44,7 +46,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		
 		enableMicrophone = options?.EnableMicrophone ?? false;
 
-		if (!string.IsNullOrWhiteSpace(options?.NotificationContentTitle))
+        if (!string.IsNullOrWhiteSpace(options?.NotificationContentTitle))
 		{
 			NotificationContentTitle = options.NotificationContentTitle;
 		}
@@ -65,10 +67,10 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 		if (saveOptions.SaveToGallery)
 		{
-			IsSavingToGallery = saveOptions.SaveToGallery;
-			Java.IO.File picturesDirectory = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryPictures);
+			isSavingToGallery = saveOptions.SaveToGallery;
+			Java.IO.File picturesDirectory = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryPictures)!;
 			string fileName = Path.GetFileName(savePath);
-			Java.IO.File destinationFile = new Java.IO.File(picturesDirectory, fileName);
+			Java.IO.File destinationFile = new(picturesDirectory, fileName);
 			filePath = destinationFile.AbsolutePath;
 		}
 		else
@@ -112,73 +114,91 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 			}
 
 			var context = Application.Context;
+            context.StopService(new Intent(context, typeof(ScreenRecordingService)));
 
-			context.StopService(new Intent(context, typeof(ScreenRecordingService)));
-
-			return Task.FromResult<ScreenRecordingFile?>(new ScreenRecordingFile(filePath ?? string.Empty));
+            return Task.FromResult<ScreenRecordingFile?>(new ScreenRecordingFile(filePath ?? string.Empty));
 		}
 
 		return Task.FromResult<ScreenRecordingFile?>(null);
 	}
 
 	internal async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
-	{
-		Intent intent = new(Application.Context, typeof(ScreenRecordingService));
-		intent.PutExtra("ContentTitle", NotificationContentTitle);
-		intent.PutExtra("ContentText", NotificationContentText);
+    {
+		serviceStartAwaiter = new TaskCompletionSource<bool>();
+
+        var context = Application.Context;
+        var messenger = new Messenger(new ExternalHandler(serviceStartAwaiter));
+
+        Intent notificationSetup = new(context, typeof(ScreenRecordingService));
+        notificationSetup.PutExtra(ScreenRecordingService.ExtraCommandNotificationSetup, true);
+        notificationSetup.PutExtra(ScreenRecordingService.ExtraExternalMessenger, messenger);
+        notificationSetup.PutExtra(ScreenRecordingService.ExtraContentTitle, NotificationContentTitle);
+        notificationSetup.PutExtra(ScreenRecordingService.ExtraContentText, NotificationContentText);
 
 		// Android O
 		if (OperatingSystem.IsAndroidVersionAtLeast(26))
 		{
-			Application.Context.StartForegroundService(intent);
+            context.StartForegroundService(notificationSetup);
 		}
 		else
 		{
-			Application.Context.StartService(intent);
-		}
+			context.StartService(notificationSetup);
+        }
 
-		// Wait for the foreground service to be started
-		await Task.Delay(1000); // TODO can we do this better?
+		await serviceStartAwaiter.Task;
 
-		MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data!);
-		MediaProjection?.RegisterCallback(this, null);
+        // Prepare MediaProjection which will be later be used by the ScreenRecordingService
+        // and call the BeginRecording()
+        MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data!);
+        MediaProjection?.RegisterCallback(this, null);
 
-		if (MediaRecorder is not null)
-		{
-			MediaRecorder.Reset();
-		}
-		else
-		{
-			// Android S
-			if (OperatingSystem.IsAndroidVersionAtLeast(31))
-			{
-				MediaRecorder = new(Application.Context);
-			}
-			else
-			{
-				MediaRecorder = new();
-			}
-		}
+		Intent beginRecording = new(context, typeof(ScreenRecordingService));
+        beginRecording.PutExtra(ScreenRecordingService.ExtraCommandBeginRecording, true);
 
-		try
-		{
-			SetUpMediaRecorder(enableMicrophone);
-			MediaRecorder.Start();
-			IsRecording = true;
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine(ex.Message);
-			throw new NotSupportedException("Screen recording did not start.");
-		}
-	}
+        // Android O
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
+        {
+            context.StartForegroundService(beginRecording);
+        }
+        else
+        {
+            context.StartService(beginRecording);
+        }
+    }
 
-	public void SetUpMediaRecorder(bool enableMicrophone)
+	public void BeginRecording()
 	{
-		if (MediaRecorder is null)
-		{
-			throw new Exception("MediaRecorder has not been created.");
-		}
+        try
+        {
+            MediaRecorder = SetUpMediaRecorder(enableMicrophone);
+            MediaRecorder.Start();
+            IsRecording = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            throw new NotSupportedException("Screen recording did not start.");
+        }
+    }
+
+	private MediaRecorder SetUpMediaRecorder(bool enableMicrophone)
+	{
+        if (MediaRecorder is not null)
+        {
+            MediaRecorder.Reset();
+        }
+        else
+        {
+            // Android S
+            if (OperatingSystem.IsAndroidVersionAtLeast(31))
+            {
+                MediaRecorder = new(Application.Context);
+            }
+            else
+            {
+                MediaRecorder = new();
+            }
+        }
 
 		MediaRecorder.SetVideoSource(VideoSource.Surface);
 
@@ -190,27 +210,26 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		MediaRecorder.SetOutputFormat(OutputFormat.Mpeg4);
 		MediaRecorder.SetVideoEncoder(VideoEncoder.H264);
 
-		if (enableMicrophone)
+        if (enableMicrophone)
 		{
 			MediaRecorder.SetAudioEncoder(AudioEncoder.AmrNb);
 		}
 
-		int width = (int)DeviceDisplay.Current.MainDisplayInfo.Width;
-		int height = (int)DeviceDisplay.Current.MainDisplayInfo.Height;
-		int density = (int)DeviceDisplay.Current.MainDisplayInfo.Density;
+		var (width, height, density, frameRate, bitRate) = GetDefaultSettings();
 
 		MediaRecorder.SetVideoSize(width, height);
-		MediaRecorder.SetVideoFrameRate(30);
-		MediaRecorder.SetOutputFile(filePath);
+		MediaRecorder.SetVideoFrameRate(frameRate);
+        MediaRecorder.SetVideoEncodingBitRate(bitRate);
+        MediaRecorder.SetOutputFile(filePath);
 
-		if (IsSavingToGallery)
+		if (isSavingToGallery)
 		{
 			//This provides a way for applications to pass a newly created or downloaded media file to the media scanner service.
 			//The media scanner service will read metadata from the file and add the file to the media content provider.
 			//Source:https://developer.android.com/reference/android/media/MediaScannerConnection
 			MediaScannerConnection.ScanFile(Application.Context,
-									new string[] { filePath },
-									new string[] { "video/mp4" },
+									[filePath!],
+									["video/mp4"],
 									null);
 		}
 
@@ -227,9 +246,13 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		catch (Java.IO.IOException ex)
 		{
 			Console.WriteLine($"MediaRecorder preparation failed: {ex.Message}");
-			// Handle preparation failure
-			MediaRecorder?.Release();
+            // Handle preparation failure
+            VirtualDisplay?.Release();
+            MediaRecorder?.Release();
+			throw;
 		}
+
+		return MediaRecorder;
 	}
 
 	public void Setup()
@@ -237,7 +260,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		if (ProjectionManager is not null)
 		{
 			Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
-			Platform.CurrentActivity?.StartActivityForResult(captureIntent, requestMediaProjectionCode);
+			Platform.CurrentActivity?.StartActivityForResult(captureIntent, RequestMediaProjectionCode);
 		}
 	}
 
@@ -248,9 +271,25 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		VirtualDisplay?.Release();
 		MediaRecorder?.Release();
 	}
+
+    private static (int Width, int Height, int Density, int FrameRate, int BitRate) GetDefaultSettings()
+    {
+        int width = (int)DeviceDisplay.Current.MainDisplayInfo.Width;
+        int height = (int)DeviceDisplay.Current.MainDisplayInfo.Height;
+        int density = (int)DeviceDisplay.Current.MainDisplayInfo.Density;
+
+        // A higher frame rate (e.g., 60 FPS) results in smoother video but increases file size and processing requirements.
+        // A lower frame rate (e.g., 15 FPS) reduces file size but may result in choppy video, especially for high-motion content.
+        int frameRate = 30;
+
+        // A higher value results in better quality but larger file sizes, while a lower value reduces quality.
+        int bitRate = 3;
+
+        return (width, height, density, frameRate, bitRate);
+    }
 }
 
-class MyVirtualDisplayCallback : VirtualDisplay.Callback
+internal class MyVirtualDisplayCallback : VirtualDisplay.Callback
 {
 	public override void OnPaused()
 	{
@@ -266,4 +305,17 @@ class MyVirtualDisplayCallback : VirtualDisplay.Callback
 	{
 		base.OnStopped();
 	}
+}
+
+internal class ExternalHandler(TaskCompletionSource<bool> tcs) : Handler
+{
+    private readonly TaskCompletionSource<bool> _tcs = tcs;
+
+    public override void HandleMessage(Message msg)
+    {
+        if (msg.What == ScreenRecordingService.MsgServiceStarted)
+        {
+            _tcs.TrySetResult(true);
+        }
+    }
 }

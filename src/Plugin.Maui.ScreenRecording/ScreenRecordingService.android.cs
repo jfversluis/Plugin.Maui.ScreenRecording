@@ -2,68 +2,136 @@
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
+using Android.Util;
 
 namespace Plugin.Maui.ScreenRecording;
+
 [Service(ForegroundServiceType = ForegroundService.TypeMediaProjection)]
 class ScreenRecordingService : Service
 {
-	public override IBinder? OnBind(Intent? intent)
-	{
-		return null;
-	}
+    public const int NotificationId = 1337;
+    public const string ChannelId = "ScreenRecordingService";
+    public const string ExtraExternalMessenger = "ExternalMessenger";
+    public const string ExtraContentTitle = "ContentTitle";
+    public const string ExtraContentText = "ContentText";
+    public const string ExtraCommandNotificationSetup = "SetupNotification";
+    public const string ExtraCommandBeginRecording = "BeginRecording";
+    
+    public const int MsgServiceStarted = 1;
 
-	public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
-	{
-		string CHANNEL_ID = "ScreenRecordingService";
-		int NOTIFICATION_ID = 1337;
-		Notification? foregroundNotification = null;
+    public override IBinder? OnBind(Intent? intent)
+    {
+        return null;
+    }
 
-		// Android O
-		if (OperatingSystem.IsAndroidVersionAtLeast(26))
-		{
-			var channelName = "Screen Recording Service";
-			var channel = new NotificationChannel(CHANNEL_ID, channelName, NotificationImportance.Default)
-			{
-				Description = "Notification Channel for Screen Recording Service"
-			};
+    public override StartCommandResult OnStartCommand(Intent? intent, StartCommandFlags flags, int startId)
+    {
+        NotifyHandler(intent);
 
-			var notificationManager = (NotificationManager?)GetSystemService(NotificationService)
-				?? throw new Exception($"{nameof(NotificationManager)} system service could not be retrieved.");
+        if (intent?.GetBooleanExtra(ExtraCommandNotificationSetup, false) == true)
+        {
+            SetupForegroundNotification(intent);
+        }
 
-			notificationManager.CreateNotificationChannel(channel);
+        if (intent?.GetBooleanExtra(ExtraCommandBeginRecording, false) == true)
+        {
+            BeginRecording();
+        }
 
-			string contentTitle = intent?.GetStringExtra("ContentTitle") ??
-				ScreenRecordingOptions.defaultAndroidNotificationTitle;
+        return StartCommandResult.Sticky;
+    }
 
-			string contentText = intent?.GetStringExtra("ContentText") ??
-				ScreenRecordingOptions.defaultAndroidNotificationText;
+    public void BeginRecording()
+    {
+        try
+        {
+            var instance = (ScreenRecordingImplementation)ScreenRecording.Default;
+            instance.BeginRecording();
+            Log.Debug(ChannelId, "Recording started.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ChannelId, $"Failed to start recording: {ex}");
+            StopSelf();
+        }
+    }
 
-			// Create a notification for the foreground service
-			var notificationBuilder = new Notification.Builder(this, CHANNEL_ID)
-				.SetContentTitle(contentTitle)
-				.SetContentText(contentText)
-				.SetSmallIcon(Resource.Drawable.notification_template_icon_low_bg); // Ensure you have 'ic_notification' in Resources/drawable
+    private static void NotifyHandler(Intent? intent)
+    {
+        // Notify the external observer that the service has started.
+        if (GetParcelableExtra<Messenger>(intent, ExtraExternalMessenger) is Messenger messenger)
+        {
+            try
+            {
+                var msg = Message.Obtain(null, MsgServiceStarted);
+                messenger.Send(msg);
+            }
+            catch (RemoteException ex)
+            {
+                Log.Error(ChannelId, "Failed to send message to activity: " + ex);
+            }
+        }
+    }
 
-			foregroundNotification = notificationBuilder.Build();
+    private void SetupForegroundNotification(Intent? intent)
+    {
+        // Android O
+        if (OperatingSystem.IsAndroidVersionAtLeast(26))
+        {
+            CreateNotificationChannel();
 
-			// Start the service in the foreground
-			// Android Q
-			if (OperatingSystem.IsAndroidVersionAtLeast(29))
-			{
-				StartForeground(NOTIFICATION_ID, foregroundNotification, ForegroundService.TypeMediaProjection);
-			}
-			// Android O
-			else if (OperatingSystem.IsAndroidVersionAtLeast(26))
-			{
-				StartForeground(NOTIFICATION_ID, foregroundNotification);
-			}
-		}
-		// Any Android before O
-		else
-		{
-			StartService(intent);
-		}
+            var contentTitle = intent?.GetStringExtra(ExtraContentTitle) ?? ScreenRecordingOptions.defaultAndroidNotificationTitle;
+            var contentText = intent?.GetStringExtra(ExtraContentText) ?? ScreenRecordingOptions.defaultAndroidNotificationText;
 
-		return StartCommandResult.Sticky;
-	}
+            var notification = new Notification.Builder(this, ChannelId)
+                .SetContentTitle(contentTitle)
+                .SetContentText(contentText)
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
+                .Build();
+
+            // Android Q
+            if (OperatingSystem.IsAndroidVersionAtLeast(29))
+            {
+                StartForeground(NotificationId, notification, ForegroundService.TypeMediaProjection);
+            }
+            else
+            {
+                StartForeground(NotificationId, notification);
+            }
+        }
+        else
+        {
+            // Pre-Android O
+            StartForeground(NotificationId, CreateFallbackNotification());
+        }
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "The callee bears responsibility for ensuring an OS version check before invoking this method.")]
+    private void CreateNotificationChannel()
+    {
+        var channel = new NotificationChannel(ChannelId, "Screen Recording Service", NotificationImportance.Default)
+        {
+            Description = "Notification Channel for Screen Recording Service"
+        };
+
+        var notificationManager = (NotificationManager?)GetSystemService(NotificationService);
+        notificationManager?.CreateNotificationChannel(channel);
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1422:Validate platform compatibility", Justification = "The callee bears responsibility for ensuring an OS version check before invoking this method.")]
+    private Notification CreateFallbackNotification()
+    {
+        return new Notification.Builder(this)
+            .SetContentTitle("Screen Recording")
+            .SetContentText("Screen recording is running.")
+            .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
+            .Build();
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1422:Validate platform compatibility", Justification = "Compiler noob")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Compiler noob")]
+    private static T? GetParcelableExtra<T>(Intent? intent, string name) where T : Java.Lang.Object =>
+        OperatingSystem.IsAndroidVersionAtLeast(33)
+            ? intent?.GetParcelableExtra(name) as T
+            : intent?.GetParcelableExtra(name, Java.Lang.Class.FromType(typeof(T))) as T;
 }
