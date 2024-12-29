@@ -12,7 +12,7 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
 	public bool IsSupported => RPScreenRecorder.SharedRecorder.Available;
 
-	public void StartRecording(ScreenRecordingOptions? options)
+    public Task<bool> StartRecording(ScreenRecordingOptions? options)
 	{
 		if (options is not null)
 		{
@@ -31,10 +31,15 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 		RPScreenRecorder.SharedRecorder.MicrophoneEnabled =
 			screenRecordingOptions.EnableMicrophone;
 
-		RPScreenRecorder.SharedRecorder.StartRecording(error =>
+		var tcs = new TaskCompletionSource<bool>();
+
+        RPScreenRecorder.SharedRecorder.StartRecording(error =>
 		{
 			// TODO do something with error?
+			tcs.TrySetResult(error == null);
 		});
+
+		return tcs.Task;
 	}
 
 	public async Task<ScreenRecordingFile?> StopRecording()

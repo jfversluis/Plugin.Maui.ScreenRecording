@@ -10,10 +10,13 @@ namespace Plugin.Maui.ScreenRecording;
 
 public partial class ScreenRecordingImplementation : MediaProjection.Callback, IScreenRecording
 {
-	private const int RequestMediaProjectionCode = 1;
+    // https://stackoverflow.com/q/32013948/2304737
+    public const int RequestMediaProjectionCode = (int)Android.App.Result.FirstUser + 1;
+
 	private string? filePath;
 	private bool enableMicrophone;
     private TaskCompletionSource<bool>? serviceStartAwaiter;
+	private TaskCompletionSource<bool>? recordingStartAwaiter;
 
     string NotificationContentTitle { get; set; } =
 		ScreenRecordingOptions.defaultAndroidNotificationTitle;
@@ -32,12 +35,12 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 	bool isSavingToGallery;
 
-	public ScreenRecordingImplementation()
+    public ScreenRecordingImplementation()
 	{
 		ProjectionManager = (MediaProjectionManager?)Platform.AppContext.GetSystemService(Context.MediaProjectionService);
 	}
 
-	public void StartRecording(ScreenRecordingOptions? options = null)
+	public Task<bool> StartRecording(ScreenRecordingOptions? options = null)
 	{
 		if (!IsSupported)
 		{
@@ -78,8 +81,12 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 			filePath = savePath;
 		}
 
-		Setup();
-	}
+		recordingStartAwaiter = new TaskCompletionSource<bool>();
+
+        Setup();
+
+		return recordingStartAwaiter.Task;
+    }
 
 	public Task<ScreenRecordingFile?> StopRecording()
 	{
@@ -116,15 +123,25 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 			var context = Application.Context;
             context.StopService(new Intent(context, typeof(ScreenRecordingService)));
 
-            return Task.FromResult<ScreenRecordingFile?>(new ScreenRecordingFile(filePath ?? string.Empty));
+            return Task.FromResult(string.IsNullOrEmpty(filePath)
+				? null 
+				: new ScreenRecordingFile(filePath)
+			);
 		}
 
 		return Task.FromResult<ScreenRecordingFile?>(null);
 	}
 
+	internal void OnScreenCapturePermissionDenied()
+	{
+        recordingStartAwaiter?.TrySetResult(false);
+    }
+
 	internal async void OnScreenCapturePermissionGranted(int resultCode, Intent? data)
     {
-		serviceStartAwaiter = new TaskCompletionSource<bool>();
+        recordingStartAwaiter?.TrySetResult(true);
+
+        serviceStartAwaiter = new TaskCompletionSource<bool>();
 
         var context = Application.Context;
         var messenger = new Messenger(new ExternalHandler(serviceStartAwaiter));
@@ -152,7 +169,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
         MediaProjection = ProjectionManager?.GetMediaProjection(resultCode, data!);
         MediaProjection?.RegisterCallback(this, null);
 
-		Intent beginRecording = new(context, typeof(ScreenRecordingService));
+        Intent beginRecording = new(context, typeof(ScreenRecordingService));
         beginRecording.PutExtra(ScreenRecordingService.ExtraCommandBeginRecording, true);
 
         // Android O
@@ -280,7 +297,11 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
         // A higher frame rate (e.g., 60 FPS) results in smoother video but increases file size and processing requirements.
         // A lower frame rate (e.g., 15 FPS) reduces file size but may result in choppy video, especially for high-motion content.
-        int frameRate = 30;
+        int frameRate;
+#pragma warning disable CA1422 // Validate platform compatibility
+        var profile = CamcorderProfile.Get(CamcorderQuality.High);
+		frameRate = profile?.VideoFrameRate ?? 30;
+#pragma warning restore CA1422 // Validate platform compatibility
 
         // A higher value results in better quality but larger file sizes, while a lower value reduces quality.
         int bitRate = 3;
