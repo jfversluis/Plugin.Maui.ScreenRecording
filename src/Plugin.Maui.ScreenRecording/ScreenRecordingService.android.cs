@@ -57,7 +57,7 @@ class ScreenRecordingService : Service
         }
     }
 
-    private static void NotifyHandler(Intent? intent)
+    static void NotifyHandler(Intent? intent)
     {
         // Notify the external observer that the service has started.
         if (GetParcelableExtra<Messenger>(intent, ExtraExternalMessenger) is Messenger messenger)
@@ -74,7 +74,7 @@ class ScreenRecordingService : Service
         }
     }
 
-    private void SetupForegroundNotification(Intent? intent)
+    void SetupForegroundNotification(Intent? intent)
     {
         // Android O
         if (OperatingSystem.IsAndroidVersionAtLeast(26))
@@ -107,9 +107,13 @@ class ScreenRecordingService : Service
         }
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "The callee bears responsibility for ensuring an OS version check before invoking this method.")]
-    private void CreateNotificationChannel()
+    void CreateNotificationChannel()
     {
+        if (!OperatingSystem.IsAndroidVersionAtLeast(26))
+        {
+            return;
+        }
+
         var channel = new NotificationChannel(ChannelId, "Screen Recording Service", NotificationImportance.Default)
         {
             Description = "Notification Channel for Screen Recording Service"
@@ -119,20 +123,22 @@ class ScreenRecordingService : Service
         notificationManager?.CreateNotificationChannel(channel);
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1422:Validate platform compatibility", Justification = "The callee bears responsibility for ensuring an OS version check before invoking this method.")]
-    private Notification CreateFallbackNotification()
+    Notification CreateFallbackNotification()
     {
-        return new Notification.Builder(this)
-            .SetContentTitle("Screen Recording")
-            .SetContentText("Screen recording is running.")
-            .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
-            .Build();
+        if (!OperatingSystem.IsAndroidVersionAtLeast(26))
+        {
+            return new Notification.Builder(this)
+                .SetContentTitle("Screen Recording")
+                .SetContentText("Screen recording is running.")
+                .SetSmallIcon(global::Android.Resource.Drawable.PresenceVideoOnline)
+                .Build();
+        }
+
+        return new Notification();
     }
 
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1422:Validate platform compatibility", Justification = "Compiler noob")]
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "Compiler noob")]
-    private static T? GetParcelableExtra<T>(Intent? intent, string name) where T : Java.Lang.Object =>
+    static T? GetParcelableExtra<T>(Intent? intent, string name) where T : Java.Lang.Object =>
         OperatingSystem.IsAndroidVersionAtLeast(33)
-            ? intent?.GetParcelableExtra(name) as T
-            : intent?.GetParcelableExtra(name, Java.Lang.Class.FromType(typeof(T))) as T;
+            ? intent?.GetParcelableExtra(name, Java.Lang.Class.FromType(typeof(T))) as T
+            : intent?.GetParcelableExtra(name) as T;
 }
