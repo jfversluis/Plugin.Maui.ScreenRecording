@@ -6,7 +6,7 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
 	public bool IsSupported => throw new PlatformNotSupportedException();
 
-	public void StartRecording(ScreenRecordingOptions? options)
+    public Task<bool> StartRecording(ScreenRecordingOptions? options)
 	{
 		throw new PlatformNotSupportedException();
 	}

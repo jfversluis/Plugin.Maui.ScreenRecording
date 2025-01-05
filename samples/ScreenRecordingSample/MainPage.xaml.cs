@@ -40,7 +40,7 @@ public partial class MainPage : ContentPage
 		btnStop.IsEnabled = true;
 		if (setCustomNotification.IsToggled)
 		{
-			screenRecording.StartRecording(new()
+			_ = await screenRecording.StartRecording(new()
 			{
 				EnableMicrophone = recordMicrophone.IsToggled,
 				SaveToGallery = saveToGallery.IsToggled,
@@ -50,7 +50,7 @@ public partial class MainPage : ContentPage
 		}
 		else
 		{
-			screenRecording.StartRecording(new()
+			_ = await screenRecording.StartRecording(new()
 			{
 				EnableMicrophone = recordMicrophone.IsToggled,
 				SaveToGallery = saveToGallery.IsToggled

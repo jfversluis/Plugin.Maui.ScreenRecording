@@ -20,7 +20,19 @@ public static class AppBuilderExtensions
             {
                 android.OnActivityResult((activity, requestCode, resultCode, data) =>
                 {
-                    ((ScreenRecordingImplementation)ScreenRecording.Default).OnScreenCapturePermissionGranted((int)resultCode, data);
+                    if (requestCode == ScreenRecordingImplementation.RequestMediaProjectionCode)
+                    {
+                        var instance = (ScreenRecordingImplementation)ScreenRecording.Default;
+                        switch (resultCode)
+                        {
+                            case Android.App.Result.Ok:
+                                instance.OnScreenCapturePermissionGranted((int)resultCode, data);
+                                break;
+                            case Android.App.Result.Canceled:
+                                instance.OnScreenCapturePermissionDenied();
+                                break;
+                        }
+                    }
                 });
             });
         });
