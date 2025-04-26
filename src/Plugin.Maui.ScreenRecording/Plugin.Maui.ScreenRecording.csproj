@@ -1,7 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst;net8.0</TargetFrameworks>
-    <!--<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>-->
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
+		
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 		<SingleProject>true</SingleProject>
@@ -34,8 +35,10 @@
 		<PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
 		<DebugType>portable</DebugType>
 		<PackageIcon>icon.png</PackageIcon>
+		<Platforms Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">AnyCPU;x86;x64</Platforms>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Version>1.0.1</Version>
 	</PropertyGroup>
-
 	<!-- iOS & MacCatalyst -->
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net')) == true AND $(TargetFramework.Contains('-ios')) != true AND $(TargetFramework.Contains('-maccatalyst')) != true ">
 		<Compile Remove="**\**\*.ios.cs" />
@@ -56,7 +59,8 @@
 	</ItemGroup>
 	<!-- Windows -->
 	<ItemGroup Condition="$(TargetFramework.StartsWith('net')) == true AND $(TargetFramework.Contains('-windows')) != true">
-		<Compile Remove="**\*.windows.cs" />
+		<Compile Remove="**\**\*.windows.cs" />
+		<None Include="**\**\*.windows.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 		<Compile Remove="**\windows\**\*.cs" />
 		<None Include="**\windows\**\*.cs" Exclude="$(DefaultItemExcludes);$(DefaultExcludesInProjectFolder)" />
 	</ItemGroup>
@@ -70,11 +74,20 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="all" IsImplicitlyDefined="true" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
+		
 	</ItemGroup>
 
 	<!-- Package additions -->
 	<ItemGroup>
 		<None Include="..\..\nuget.png" PackagePath="icon.png" Pack="true" />
 	</ItemGroup>
-
+	<ItemGroup>
+	  <EditorConfigFiles Remove="C:\Users\duxan\source\repos\Plugin.Maui.ScreenRecording\Plugin.Maui.ScreenRecording\src\Plugin.Maui.ScreenRecording\.editorconfig" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows10.0.19041.0'">
+	  <PackageReference Include="ScreenRecorderLib.Levchenko">
+	    <Version>6.5.4</Version>
+	  </PackageReference>
+	</ItemGroup>
+	
 </Project>

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net8.0-android;net8.0-ios;net8.0-maccatalyst</TargetFrameworks>
-		<!--<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>-->
+		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net8.0-windows10.0.19041.0</TargetFrameworks>
 		<!-- Uncomment to also build the tizen app. You will need to install tizen by following this: https://github.com/Samsung/Tizen.NET -->
 		<!-- <TargetFrameworks>$(TargetFrameworks);net8.0-tizen</TargetFrameworks> -->
 		<OutputType>Exe</OutputType>
@@ -48,7 +48,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\src\Plugin.Maui.ScreenRecording\Plugin.Maui.ScreenRecording.csproj" />
+		<ProjectReference Include="..\..\src\Plugin.Maui.ScreenRecording\Plugin.Maui.ScreenRecording.csproj" />
 	  <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 	</ItemGroup>
 </Project>
