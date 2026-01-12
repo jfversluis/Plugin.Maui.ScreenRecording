@@ -9,6 +9,9 @@ jobs:
   release-nuget:
   
     runs-on: windows-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v3
@@ -31,7 +34,10 @@ jobs:
         run: dotnet build src\Plugin.Maui.ScreenRecording.sln -c Release /p:Version=${{ steps.get_version.outputs.version-without-v }}
       - name: Pack
         run: dotnet pack src\Plugin.Maui.ScreenRecording.sln -c Release /p:Version=${{ steps.get_version.outputs.version-without-v }} --no-build --output .
+      - name: NuGet login (OIDC)
+        uses: NuGet/login@v1
+        id: nuget_login
+        with:
+          user: jfversluis
       - name: Push
-        run: dotnet nuget push Plugin.Maui.ScreenRecording.${{ steps.get_version.outputs.version-without-v }}.nupkg -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push Plugin.Maui.ScreenRecording.${{ steps.get_version.outputs.version-without-v }}.nupkg -s https://api.nuget.org/v3/index.json -k ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
