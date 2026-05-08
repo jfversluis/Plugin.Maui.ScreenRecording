@@ -35,7 +35,11 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
         RPScreenRecorder.SharedRecorder.StartRecording(error =>
 		{
-			// TODO do something with error?
+			if (error is not null)
+			{
+				System.Diagnostics.Debug.WriteLine($"[ScreenRecording] Failed to start recording: {error.LocalizedDescription}");
+			}
+
 			tcs.TrySetResult(error == null);
 		});
 
@@ -57,8 +61,8 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 
 				if (permissionResult != PermissionStatus.Granted)
 				{
-					// TODO what do we do here?
-					return null;
+					throw new ScreenRecordingException(
+						"Photo library permission was not granted. The recording was saved to the temporary path but could not be added to the gallery.");
 				}
 
 				PHPhotoLibrary.SharedPhotoLibrary.PerformChanges(() =>
@@ -66,16 +70,14 @@ public partial class ScreenRecordingImplementation : IScreenRecording
 					PHAssetChangeRequest.FromVideo(savePath);
 				}, (success, error) =>
 				{
-					// TODO what to do here?
+					if (!success && error is not null)
+					{
+						System.Diagnostics.Debug.WriteLine($"[ScreenRecording] Failed to save to photo library: {error.LocalizedDescription}");
+					}
 				});
 			}
 
 			return new ScreenRecordingFile(savePath.Path ?? string.Empty);
-			// TODO show preview view controller?
-			// Show preview after recording, only on iOS/macOS
-			//var cv = await RPScreenRecorder.SharedRecorder.StopRecordingAsync();
-
-			//Platform.GetCurrentUIViewController().ShowViewController(cv, cv);
 		}
 
 		return null;
