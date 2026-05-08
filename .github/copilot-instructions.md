@@ -1,21 +1,21 @@
-# $ Copilot InstructionsREPO 
+# Plugin.Maui.ScreenRecording - Copilot Instructions
 
 ## Project Overview
 
-This is a .NET MAUI plugin that provides the ability to record the device screen from within your app. It targets Android, iOS, macOS (Catalyst), Windows.
+This is a .NET MAUI plugin that provides the ability to record the device screen from within your app. It targets Android, iOS, macOS (Catalyst), and Windows.
 
-### Architecture
+## Architecture
 
-Core interface: `IScreenRecording` with StartRecording/StopRecording.
+Core interface: `IScreenRecording` with `StartRecording`/`StopRecording`.
 
 Key components: `ScreenRecordingOptions`, `ScreenRecordingFile`, `AppBuilderExtensions`.
 
 Platform specifics:
 - Android: MediaProjection + foreground service (`ScreenRecordingService.android.cs`)
 - iOS/macOS: ReplayKit
-- Windows: Windows.Graphics.Capture
+- Windows: `Windows.Graphics.Capture`
 
-Note: `UseScreenRecording()` builder extension required for Android.
+Note: `UseScreenRecording()` builder extension is required for Android.
 
 ## Code Conventions
 
@@ -23,11 +23,11 @@ Note: `UseScreenRecording()` builder extension required for Android.
 All code uses: `Plugin.Maui.ScreenRecording`
 
 ### File Naming
-- `*.shared. Cross-platform codecs` 
-- `*.android. Androidcs` 
-- `*.macios. iOS/macOScs` 
-- `*.windows. Windowscs` 
-- `*.net. Generic .NET fallbackcs` 
+- `*.shared.cs` - Cross-platform code
+- `*.android.cs` - Android-specific code
+- `*.macios.cs` - iOS/macOS-specific code
+- `*.windows.cs` - Windows-specific code
+- `*.net.cs` - Generic .NET fallback
 
 ### Standards
 - File-scoped namespaces
