@@ -44,7 +44,7 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 	{
 		if (!IsSupported)
 		{
-			throw new NotSupportedException("Screen recording not supported on this device.");
+			throw new NotSupportedException("Screen recording is not supported on this device.");
 		}
 		
 		enableMicrophone = options?.EnableMicrophone ?? false;
@@ -101,19 +101,13 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 				MediaRecorder = null;
 				VirtualDisplay?.Release();
 			}
-			catch (Exception ex)
+			catch (Java.Lang.IllegalStateException ex)
 			{
-				Console.WriteLine("STACK TRACE:");
-				Console.WriteLine(ex.StackTrace);
-
-				Console.WriteLine("Exception Message:");
-				Console.WriteLine(ex.Message);
-
-				if (ex.InnerException != null)
-				{
-					Console.WriteLine("INNER Exception Message:");
-					Console.WriteLine(ex.InnerException.Message);
-				}
+				System.Diagnostics.Debug.WriteLine($"[ScreenRecording] MediaRecorder was in an invalid state: {ex.Message}");
+			}
+			catch (Java.Lang.RuntimeException ex)
+			{
+				System.Diagnostics.Debug.WriteLine($"[ScreenRecording] Failed to stop recording cleanly: {ex.Message}");
 			}
 			finally
 			{
@@ -191,10 +185,13 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
             MediaRecorder.Start();
             IsRecording = true;
         }
-        catch (Exception ex)
+        catch (Java.Lang.IllegalStateException ex)
         {
-            Console.WriteLine(ex);
-            throw new NotSupportedException("Screen recording did not start.");
+            throw new ScreenRecordingException("Failed to start recording. The MediaRecorder is in an invalid state.", ex);
+        }
+        catch (Java.IO.IOException ex)
+        {
+            throw new ScreenRecordingException("Failed to start recording due to an I/O error. Check that the save path is valid and writable.", ex);
         }
     }
 
@@ -262,11 +259,9 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		}
 		catch (Java.IO.IOException ex)
 		{
-			Console.WriteLine($"MediaRecorder preparation failed: {ex.Message}");
-            // Handle preparation failure
-            VirtualDisplay?.Release();
-            MediaRecorder?.Release();
-			throw;
+			VirtualDisplay?.Release();
+			MediaRecorder?.Release();
+			throw new ScreenRecordingException($"MediaRecorder preparation failed: {ex.Message}", ex);
 		}
 
 		return MediaRecorder;
