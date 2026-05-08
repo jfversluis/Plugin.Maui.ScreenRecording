@@ -308,11 +308,12 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 
 		declaredPermissions ??= Array.Empty<string>();
 
-		if (!declaredPermissions.Contains("android.permission.FOREGROUND_SERVICE"))
+		if (OperatingSystem.IsAndroidVersionAtLeast(28) &&
+			!declaredPermissions.Contains("android.permission.FOREGROUND_SERVICE"))
 		{
 			throw new InvalidOperationException(
 				"The android.permission.FOREGROUND_SERVICE permission is not declared in your AndroidManifest.xml. " +
-				"Screen recording on Android requires a foreground service.");
+				"Screen recording on Android 9+ (API 28) requires a foreground service.");
 		}
 
 		// Android 14 (API 34) requires FOREGROUND_SERVICE_MEDIA_PROJECTION
@@ -330,6 +331,19 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 				"The android.permission.RECORD_AUDIO permission is not declared in your AndroidManifest.xml. " +
 				"This permission is required when EnableMicrophone is set to true. " +
 				"Add this permission to your manifest and request it at runtime before starting the recording.");
+		}
+
+		if (enableMicrophone && OperatingSystem.IsAndroidVersionAtLeast(23))
+		{
+			var activity = Platform.CurrentActivity
+				?? throw new InvalidOperationException("Could not determine the current Android activity.");
+
+			if (activity.CheckSelfPermission("android.permission.RECORD_AUDIO") != Android.Content.PM.Permission.Granted)
+			{
+				throw new InvalidOperationException(
+					"The android.permission.RECORD_AUDIO runtime permission has not been granted. " +
+					"Request this permission from the user before starting a recording with microphone enabled.");
+			}
 		}
 	}
 
