@@ -46,7 +46,9 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		{
 			throw new NotSupportedException("Screen recording not supported on this device.");
 		}
-		
+
+		ValidateAndroidPermissions(options?.EnableMicrophone ?? false);
+
 		enableMicrophone = options?.EnableMicrophone ?? false;
 
         if (!string.IsNullOrWhiteSpace(options?.NotificationContentTitle))
@@ -278,6 +280,40 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		{
 			Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
 			Platform.CurrentActivity?.StartActivityForResult(captureIntent, RequestMediaProjectionCode);
+		}
+	}
+
+	static void ValidateAndroidPermissions(bool enableMicrophone)
+	{
+		var context = Application.Context;
+		var packageInfo = context.PackageManager?.GetPackageInfo(
+			context.PackageName ?? string.Empty,
+			Android.Content.PM.PackageInfoFlags.Of((long)Android.Content.PM.PackageInfoFlagsLong.Permissions));
+
+		var declaredPermissions = packageInfo?.RequestedPermissions ?? [];
+
+		if (!declaredPermissions.Contains("android.permission.FOREGROUND_SERVICE"))
+		{
+			throw new InvalidOperationException(
+				"The android.permission.FOREGROUND_SERVICE permission is not declared in your AndroidManifest.xml. " +
+				"Screen recording on Android requires a foreground service.");
+		}
+
+		// Android 14 (API 34) requires FOREGROUND_SERVICE_MEDIA_PROJECTION
+		if (OperatingSystem.IsAndroidVersionAtLeast(34) &&
+			!declaredPermissions.Contains("android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"))
+		{
+			throw new InvalidOperationException(
+				"The android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION permission is not declared in your AndroidManifest.xml. " +
+				"This permission is required on Android 14+ for screen recording.");
+		}
+
+		if (enableMicrophone && !declaredPermissions.Contains("android.permission.RECORD_AUDIO"))
+		{
+			throw new InvalidOperationException(
+				"The android.permission.RECORD_AUDIO permission is not declared in your AndroidManifest.xml. " +
+				"This permission is required when EnableMicrophone is set to true. " +
+				"Add this permission to your manifest and request it at runtime before starting the recording.");
 		}
 	}
 
