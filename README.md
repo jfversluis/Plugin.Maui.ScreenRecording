@@ -14,20 +14,36 @@ Available on [NuGet](http://www.nuget.org/packages/Plugin.Maui.ScreenRecording).
 
 Install with the dotnet CLI: `dotnet add package Plugin.Maui.ScreenRecording`, or through the NuGet Package Manager in Visual Studio.
 
-## API Usage
+### Supported Platforms
+
+| Platform | Supported | What is recorded |
+|----------|-----------|-----------------|
+| Android | ✅ | **Full device screen** (including other apps, notifications, etc.) |
+| iOS | ✅ | **App screen only** (not the full device) |
+| macOS (Catalyst) | ✅ | **App screen only** (not the full device) |
+| Windows | ✅ | Full monitor |
+
+> [!IMPORTANT]
+> **iOS Simulator**: Screen recording is **not supported** on the iOS Simulator. You must use a physical device to test screen recording on iOS.
+
+> [!NOTE]
+> On Android, the recording captures the full device screen including content from other apps if the user navigates away. On iOS and macOS, only the app's own content is captured via ReplayKit.
+
+## Setup
 
 In `MauiProgram.cs` add the reference to the screen recording plugin:
-```
-    using Plugin.Maui.ScreenRecording;
+
+```csharp
+using Plugin.Maui.ScreenRecording;
 ```
 
 Then add a call to `.UseScreenRecording()` on your `MauiAppBuilder`. For example:
 
-```
+```csharp
 var builder = MauiApp.CreateBuilder();
 builder
     .UseMauiApp<App>()
-    .UseScreenRecording() // This line was added
+    .UseScreenRecording()
     .ConfigureFonts(fonts =>
     {
         fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -35,30 +51,33 @@ builder
     });
 ```
 
-### Android
+### Android Setup
 
-For Android you will need to setup a few things in your `AndroidManifest.xml` file. See an example below.\
-You should already have a `AndroidManifest.xml` file in your project, make sure to compare it with the example below and add the missing things.
+For Android you need to register the foreground service and permissions in your `AndroidManifest.xml` file. Make sure to compare it with the example below and add the missing entries:
 
 ```xml
 <application>
-	<service android:name="Plugin.Maui.ScreenRecording.ScreenRecordingImplementation.ScreenRecordingService" android:exported="false" android:foregroundServiceType="mediaProjection" />
+    <service android:name="Plugin.Maui.ScreenRecording.ScreenRecordingImplementation.ScreenRecordingService" android:exported="false" android:foregroundServiceType="mediaProjection" />
 </application>
 
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-<uses-permission android:name="android.permission.RECORD_AUDIO" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
-<!-- This one is only needed when targeting API 34 and up -->
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+<uses-permission android:name="android.permission.RECORD_AUDIO" />
 ```
 
-### iOS / macOS
+> [!NOTE]
+> `FOREGROUND_SERVICE_MEDIA_PROJECTION` is required on Android 14 (API 34) and above. If you target API 34+, this must be declared.
+> `RECORD_AUDIO` is only required if you set `EnableMicrophone = true` in your recording options.
 
-If you want to save recordings to the Photos app, you will need to declare the `NSPhotoLibraryAddUsageDescription` permission in your `info.plist` file.
+If you want to save recordings to the gallery, also add:
+```xml
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+```
 
-For example:
+### iOS / macOS Setup
+
+If you want to save recordings to the Photos app, you need to declare the `NSPhotoLibraryAddUsageDescription` permission in your `Info.plist` file:
 
 ```xml
 <key>NSPhotoLibraryAddUsageDescription</key>
@@ -67,46 +86,110 @@ For example:
 
 The permission will automatically be requested by the library when needed.
 
-## Windows Instructions
+## Usage
 
-Not supported (yet).
+### Dependency Injection (recommended)
 
-# Usage:
-
-On the page you want the screen recorder, create a variable and retrieve the static instance of the `ScreenRecording` object.
+Register the service via `UseScreenRecording()` (shown above), then inject it:
 
 ```csharp
+public partial class RecordingPage : ContentPage
+{
     readonly IScreenRecording screenRecording;
-    
-    this.screenRecording = ScreenRecording.Default;
+
+    public RecordingPage(IScreenRecording screenRecording)
+    {
+        InitializeComponent();
+        this.screenRecording = screenRecording;
+    }
+}
 ```
 
-<!-- TODO add instructions for constructor injection -->
+### Static Access
 
-To check if device is capable of making screen recordings:
-
-`screenRecording.IsSupported;`
-
-To start recording:
-
-`screenRecording.StartRecording();`
-
-Additionally you can provide `ScreenRecordingOptions` to influence the behavior:
+Alternatively, use the static accessor directly:
 
 ```csharp
-ScreenRecordingOptions options = new()
+readonly IScreenRecording screenRecording = ScreenRecording.Default;
+```
+
+### Check Support
+
+To check if the device is capable of making screen recordings:
+
+```csharp
+if (!screenRecording.IsSupported)
 {
-	EnableMicrophone = true,
-	SaveToGallery = true,
-	SavePath = Path.Combine(Path.GetTempPath(), "myRecording.mp4"),
+    // Screen recording not available on this device
+    return;
+}
+```
+
+### Start Recording
+
+```csharp
+bool started = await screenRecording.StartRecording();
+```
+
+Optionally provide `ScreenRecordingOptions` to customize behavior:
+
+```csharp
+var options = new ScreenRecordingOptions
+{
+    EnableMicrophone = true,
+    SaveToGallery = true,
+    SavePath = Path.Combine(Path.GetTempPath(), "myRecording.mp4"),
+    // Android-only: customize the foreground service notification
+    NotificationContentTitle = "Recording in progress",
+    NotificationContentText = "Your screen is being recorded."
 };
 
-screenRecording.StartRecording(options);
+bool started = await screenRecording.StartRecording(options);
 ```
 
-To stop recording:
+On Android, `StartRecording` returns `false` if the user denies the screen capture permission. On iOS, it returns `false` if ReplayKit encounters an error.
 
-`ScreenRecordingFile screenResult = await screenRecording.StopRecording();`
+### Stop Recording
+
+```csharp
+ScreenRecordingFile? result = await screenRecording.StopRecording();
+
+if (result is not null)
+{
+    // result.FullPath contains the path to the recorded video file
+    Console.WriteLine($"Recording saved to: {result.FullPath}");
+}
+```
+
+### Check Recording State
+
+```csharp
+if (screenRecording.IsRecording)
+{
+    // A recording is currently in progress
+}
+```
+
+## API Reference
+
+### `IScreenRecording`
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `IsRecording` | `bool` | Whether a screen recording is currently in progress |
+| `IsSupported` | `bool` | Whether the device supports screen recording |
+| `StartRecording(options?)` | `Task<bool>` | Starts recording. Returns `true` on success. |
+| `StopRecording()` | `Task<ScreenRecordingFile?>` | Stops recording and returns the file. Returns `null` if not recording. |
+
+### `ScreenRecordingOptions`
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `SavePath` | Temp folder | Path where the recording will be saved |
+| `SaveToGallery` | `false` | Whether to make the recording available in the device gallery |
+| `EnableMicrophone` | `false` | Whether to also record microphone input |
+| `NotificationContentTitle` | "Screen recording in progress..." | Android only: foreground service notification title |
+| `NotificationContentText` | "A screen recording is currently in progress..." | Android only: foreground service notification text |
 
 ## Acknowledgements
 
