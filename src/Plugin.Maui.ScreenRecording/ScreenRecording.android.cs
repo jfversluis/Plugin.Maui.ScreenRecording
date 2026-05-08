@@ -46,7 +46,9 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		{
 			throw new NotSupportedException("Screen recording is not supported on this device.");
 		}
-		
+
+		ValidateAndroidPermissions(options?.EnableMicrophone ?? false);
+
 		enableMicrophone = options?.EnableMicrophone ?? false;
 
         if (!string.IsNullOrWhiteSpace(options?.NotificationContentTitle))
@@ -273,6 +275,70 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 		{
 			Intent captureIntent = ProjectionManager.CreateScreenCaptureIntent();
 			Platform.CurrentActivity?.StartActivityForResult(captureIntent, RequestMediaProjectionCode);
+		}
+	}
+
+	static void ValidateAndroidPermissions(bool enableMicrophone)
+	{
+		var context = Application.Context;
+		var packageName = context.PackageName ?? string.Empty;
+
+		IList<string>? declaredPermissions;
+
+		if (OperatingSystem.IsAndroidVersionAtLeast(33))
+		{
+			var packageInfo = context.PackageManager?.GetPackageInfo(packageName,
+				Android.Content.PM.PackageManager.PackageInfoFlags.Of(
+					(long)Android.Content.PM.PackageInfoFlags.Permissions));
+			declaredPermissions = packageInfo?.RequestedPermissions;
+		}
+		else
+		{
+#pragma warning disable CS0618 // Type or member is obsolete
+			var packageInfo = context.PackageManager?.GetPackageInfo(packageName,
+				Android.Content.PM.PackageInfoFlags.Permissions);
+#pragma warning restore CS0618 // Type or member is obsolete
+			declaredPermissions = packageInfo?.RequestedPermissions;
+		}
+
+		declaredPermissions ??= Array.Empty<string>();
+
+		if (OperatingSystem.IsAndroidVersionAtLeast(28) &&
+			!declaredPermissions.Contains("android.permission.FOREGROUND_SERVICE"))
+		{
+			throw new InvalidOperationException(
+				"The android.permission.FOREGROUND_SERVICE permission is not declared in your AndroidManifest.xml. " +
+				"Screen recording on Android 9+ (API 28) requires a foreground service.");
+		}
+
+		// Android 14 (API 34) requires FOREGROUND_SERVICE_MEDIA_PROJECTION
+		if (OperatingSystem.IsAndroidVersionAtLeast(34) &&
+			!declaredPermissions.Contains("android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"))
+		{
+			throw new InvalidOperationException(
+				"The android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION permission is not declared in your AndroidManifest.xml. " +
+				"This permission is required on Android 14+ for screen recording.");
+		}
+
+		if (enableMicrophone && !declaredPermissions.Contains("android.permission.RECORD_AUDIO"))
+		{
+			throw new InvalidOperationException(
+				"The android.permission.RECORD_AUDIO permission is not declared in your AndroidManifest.xml. " +
+				"This permission is required when EnableMicrophone is set to true. " +
+				"Add this permission to your manifest and request it at runtime before starting the recording.");
+		}
+
+		if (enableMicrophone && OperatingSystem.IsAndroidVersionAtLeast(23))
+		{
+			var activity = Platform.CurrentActivity
+				?? throw new InvalidOperationException("Could not determine the current Android activity.");
+
+			if (activity.CheckSelfPermission("android.permission.RECORD_AUDIO") != Android.Content.PM.Permission.Granted)
+			{
+				throw new InvalidOperationException(
+					"The android.permission.RECORD_AUDIO runtime permission has not been granted. " +
+					"Request this permission from the user before starting a recording with microphone enabled.");
+			}
 		}
 	}
 
