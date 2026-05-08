@@ -286,11 +286,27 @@ public partial class ScreenRecordingImplementation : MediaProjection.Callback, I
 	static void ValidateAndroidPermissions(bool enableMicrophone)
 	{
 		var context = Application.Context;
-		var packageInfo = context.PackageManager?.GetPackageInfo(
-			context.PackageName ?? string.Empty,
-			Android.Content.PM.PackageInfoFlags.Of((long)Android.Content.PM.PackageInfoFlagsLong.Permissions));
+		var packageName = context.PackageName ?? string.Empty;
 
-		var declaredPermissions = packageInfo?.RequestedPermissions ?? [];
+		IList<string>? declaredPermissions;
+
+		if (OperatingSystem.IsAndroidVersionAtLeast(33))
+		{
+			var packageInfo = context.PackageManager?.GetPackageInfo(packageName,
+				Android.Content.PM.PackageManager.PackageInfoFlags.Of(
+					(long)Android.Content.PM.PackageInfoFlags.Permissions));
+			declaredPermissions = packageInfo?.RequestedPermissions;
+		}
+		else
+		{
+#pragma warning disable CS0618 // Type or member is obsolete
+			var packageInfo = context.PackageManager?.GetPackageInfo(packageName,
+				Android.Content.PM.PackageInfoFlags.Permissions);
+#pragma warning restore CS0618 // Type or member is obsolete
+			declaredPermissions = packageInfo?.RequestedPermissions;
+		}
+
+		declaredPermissions ??= Array.Empty<string>();
 
 		if (!declaredPermissions.Contains("android.permission.FOREGROUND_SERVICE"))
 		{
